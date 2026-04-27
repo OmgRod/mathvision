@@ -8,10 +8,17 @@ export const solveMathEquation = async (input: { image?: string; text?: string; 
   const prompt = `
     Analyze the mathematical problem provided below.
     ${input.text ? `Problem description: ${input.text}` : 'Analyze the attached image.'}
-    Extract the core equation and provide:
-    1. The final answer formatted in clean LaTeX.
-    2. A detailed, step-by-step explanation of how to arrive at that answer in Markdown format (the "essay" way).
-    3. A simplified list of steps for a carousel view (the "easy" way). Each step should have a short title/instruction and the mathematical expression for that step in LaTeX.
+    
+    CRITICAL: Detect if the problem has multiple parts (e.g., Question 1, 2, 3 or parts a, b, c).
+    Provide a detailed breakdown for each part.
+    
+    For each part, provide:
+    1. partId: The identifier (e.g., "1", "2a", "Part B").
+    2. finalAnswer: The result in clean LaTeX.
+    3. explanation: A detailed Markdown explanation (Essay mode).
+    4. steps: A list of simplified steps for a carousel (Easy mode).
+
+    BONUS: If a visual diagram (geometry shape, coordinate graph, number line) would help explain a step or the overall problem, generate a clean, minimal SVG string for it under 'diagramSvg' (step-level) or 'mainDiagramSvg' (overall). Use simple shapes and text.
   `;
 
   try {
@@ -33,28 +40,35 @@ export const solveMathEquation = async (input: { image?: string; text?: string; 
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            finalAnswer: {
-              type: Type.STRING,
-              description: "The final mathematical result in LaTeX (e.g., x = 5 or \\frac{1}{2}). Do not include delimiters like $$ here."
-            },
-            explanation: {
-              type: Type.STRING,
-              description: "Detailed step-by-step solution in Markdown (Essay mode)."
-            },
-            steps: {
+            parts: {
               type: Type.ARRAY,
               items: {
                 type: Type.OBJECT,
                 properties: {
-                  title: { type: Type.STRING, description: "Short instruction for this step (e.g., 'Subtract 5 from both sides')" },
-                  math: { type: Type.STRING, description: "The mathematical expression for this step in LaTeX." }
+                  partId: { type: Type.STRING, description: "Identifier like '1' or '2a'" },
+                  title: { type: Type.STRING },
+                  finalAnswer: { type: Type.STRING },
+                  explanation: { type: Type.STRING },
+                  steps: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        title: { type: Type.STRING },
+                        math: { type: Type.STRING },
+                        diagramSvg: { type: Type.STRING, description: "Minimal SVG string if applicable" }
+                      },
+                      required: ["title", "math"]
+                    }
+                  }
                 },
-                required: ["title", "math"]
-              },
-              description: "Simplified steps for carousel view (Easy mode)."
-            }
+                required: ["partId", "finalAnswer", "explanation", "steps"]
+              }
+            },
+            overallExplanation: { type: Type.STRING },
+            mainDiagramSvg: { type: Type.STRING }
           },
-          required: ["finalAnswer", "explanation", "steps"]
+          required: ["parts"]
         }
       }
     });
@@ -63,9 +77,9 @@ export const solveMathEquation = async (input: { image?: string; text?: string; 
     const result = JSON.parse(jsonStr);
     
     return {
-      finalAnswer: result.finalAnswer || "Unable to determine answer",
-      explanation: result.explanation || "No explanation provided.",
-      steps: result.steps || []
+      parts: result.parts || [],
+      overallExplanation: result.overallExplanation,
+      mainDiagramSvg: result.mainDiagramSvg
     };
   } catch (error) {
     console.error("Gemini API Error:", error);
@@ -76,7 +90,9 @@ export const solveMathEquation = async (input: { image?: string; text?: string; 
 export const generateQuizQuestion = async (topic: string): Promise<QuizQuestion> => {
   const prompt = `
     Generate a challenging but solvable math question related to the topic: "${topic}".
-    Provide the question, the final answer (LaTeX), and the correct steps (list of instructions and LaTeX expressions).
+    If appropriate for the topic (e.g., geometry, coordinates, sets), include a 'diagramSvg' (minimal SVG string) to illustrate the question.
+    
+    IMPORTANT: Wrap any mathematical expressions within the question text AND the step instructions (titles) using double dollar signs (e.g., $$x^2 + 5x = 0$$) so they can be rendered with KaTeX.
   `;
 
   try {
@@ -89,6 +105,7 @@ export const generateQuizQuestion = async (topic: string): Promise<QuizQuestion>
           type: Type.OBJECT,
           properties: {
             question: { type: Type.STRING },
+            diagramSvg: { type: Type.STRING },
             finalAnswer: { type: Type.STRING },
             correctSteps: {
               type: Type.ARRAY,

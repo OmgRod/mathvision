@@ -2,12 +2,21 @@
 export interface Step {
   title: string;
   math: string;
+  diagramSvg?: string;
 }
 
-export interface MathResult {
+export interface MathPart {
+  partId: string; // e.g., "1", "2a", "Part B"
+  title?: string;
   finalAnswer: string;
   explanation: string;
   steps: Step[];
+}
+
+export interface MathResult {
+  parts: MathPart[];
+  overallExplanation?: string;
+  mainDiagramSvg?: string;
 }
 
 export interface QuizQuestion {
@@ -15,6 +24,7 @@ export interface QuizQuestion {
   question: string;
   correctSteps: Step[];
   finalAnswer: string;
+  diagramSvg?: string;
 }
 
 export interface QuizFeedback {
