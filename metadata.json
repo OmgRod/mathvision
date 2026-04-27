@@ -1,0 +1,7 @@
+{
+  "name": "MathVision AI",
+  "description": "A sophisticated AI-powered math solver that recognizes equations from images via upload, drag-and-drop, or clipboard paste, providing beautifully formatted LaTeX solutions.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
