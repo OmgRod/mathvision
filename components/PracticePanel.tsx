@@ -15,8 +15,12 @@ import {
   Search,
   Filter,
   GraduationCap,
-  Sparkles
+  Sparkles,
+  Volume2,
+  PenTool
 } from 'lucide-react';
+import { TTSButton } from './TTSButton';
+import { MathKeyboard } from './MathKeyboard';
 import { generateQuizQuestion, evaluateStep } from '../geminiService';
 import { QuizQuestion, QuizFeedback } from '../types';
 import ReactMarkdown from 'react-markdown';
@@ -36,6 +40,7 @@ export const PracticePanel: React.FC = () => {
   const [isFinished, setIsFinished] = useState(false);
   const [score, setScore] = useState(0);
   const [hintsUsed, setHintsUsed] = useState(0);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   
   // Search and Filter State
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,17 +71,19 @@ export const PracticePanel: React.FC = () => {
 
   const startPractice = async (selectedTopic: string) => {
     setTopic(selectedTopic);
+    setQuestion(null);
+    setFeedback(null);
+    setUserAnswer('');
+    setCurrentStepIndex(0);
+    setIsFinished(false);
+    setScore(0);
+    setHintsUsed(0);
+    
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setLoading(true);
     try {
       const q = await generateQuizQuestion(selectedTopic);
       setQuestion(q);
-      setCurrentStepIndex(0);
-      setUserAnswer('');
-      setFeedback(null);
-      setIsFinished(false);
-      setScore(0);
-      setHintsUsed(0);
     } catch (err) {
       console.error(err);
       alert("Failed to start practice. Please try again.");
@@ -125,6 +132,15 @@ export const PracticePanel: React.FC = () => {
       isCorrect: false,
       message: `Hint: ${hint}`,
     });
+  };
+
+  const handleBackToTopics = () => {
+    setTopic(null);
+    setQuestion(null);
+    setFeedback(null);
+    setUserAnswer('');
+    setCurrentStepIndex(0);
+    setIsFinished(false);
   };
 
   if (!topic) {
@@ -297,7 +313,7 @@ export const PracticePanel: React.FC = () => {
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
       <button 
-        onClick={() => setTopic(null)}
+        onClick={handleBackToTopics}
         className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold mb-8 transition-colors"
       >
         <ArrowLeft size={18} />
@@ -329,16 +345,19 @@ export const PracticePanel: React.FC = () => {
               </div>
             </div>
             
-            <div className="text-2xl font-black text-slate-900 mb-6 prose prose-slate max-w-none">
-              <ReactMarkdown
-                remarkPlugins={[remarkMath]}
-                rehypePlugins={[rehypeKatex]}
-                components={{
-                  p: ({ children }) => <>{children}</>,
-                }}
-              >
-                {question.question}
-              </ReactMarkdown>
+            <div className="flex justify-between items-center mb-6">
+              <div className="text-2xl font-black text-slate-900 prose prose-slate max-w-none flex-grow">
+                <ReactMarkdown
+                  remarkPlugins={[remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
+                  components={{
+                    p: ({ children }) => <>{children}</>,
+                  }}
+                >
+                  {question.question}
+                </ReactMarkdown>
+              </div>
+              <TTSButton text={question.question} className="ml-4" />
             </div>
 
             {question.diagramSvg && (
@@ -365,22 +384,40 @@ export const PracticePanel: React.FC = () => {
               <div className="space-y-4">
                 <label className="block text-sm font-bold text-slate-500">What's the next step? Type the mathematical expression:</label>
                 <div className="relative">
-                  <input
-                    type="text"
-                    value={userAnswer}
-                    onChange={(e) => setUserAnswer(e.target.value)}
-                    disabled={feedback?.isCorrect}
-                    placeholder="e.g. 2x = 10"
-                    className="w-full px-6 py-5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 transition-all font-mono text-lg"
-                    onKeyDown={(e) => e.key === 'Enter' && handleNextStep()}
+                  <MathKeyboard 
+                    isOpen={isKeyboardOpen}
+                    onClose={() => setIsKeyboardOpen(false)}
+                    onInsert={(sym) => {
+                      setUserAnswer(prev => prev + sym);
+                    }}
                   />
-                  <button
-                    onClick={handleNextStep}
-                    disabled={loading || !userAnswer || feedback?.isCorrect}
-                    className="absolute right-3 top-3 p-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-all"
-                  >
-                    {loading ? <RefreshCcw size={20} className="animate-spin" /> : <Send size={20} />}
-                  </button>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={userAnswer}
+                      onChange={(e) => setUserAnswer(e.target.value)}
+                      disabled={feedback?.isCorrect || loading}
+                      placeholder="e.g. 2x = 10"
+                      className="w-full pl-6 pr-24 py-5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 transition-all font-mono text-lg"
+                      onKeyDown={(e) => e.key === 'Enter' && handleNextStep()}
+                    />
+                    <div className="absolute right-2 top-2 bottom-2 flex gap-1">
+                      <button
+                        onClick={() => setIsKeyboardOpen(!isKeyboardOpen)}
+                        className="p-3 text-indigo-400 hover:text-indigo-600 bg-indigo-50 rounded-xl transition-colors"
+                        title="Math Keyboard"
+                      >
+                        <PenTool size={20} />
+                      </button>
+                      <button
+                        onClick={handleNextStep}
+                        disabled={loading || !userAnswer || feedback?.isCorrect}
+                        className="p-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-all"
+                      >
+                        {loading ? <RefreshCcw size={20} className="animate-spin" /> : <Send size={20} />}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -398,20 +435,9 @@ export const PracticePanel: React.FC = () => {
                       ) : (
                         <XCircle className="text-rose-500 shrink-0" />
                       )}
-                      <div className="space-y-2 prose prose-sm prose-slate max-w-none">
-                        <div className={`font-bold ${feedback.isCorrect ? 'text-emerald-700' : 'text-slate-700'}`}>
-                          <ReactMarkdown
-                            remarkPlugins={[remarkMath]}
-                            rehypePlugins={[rehypeKatex]}
-                            components={{
-                              p: ({ children }) => <>{children}</>,
-                            }}
-                          >
-                            {feedback.message}
-                          </ReactMarkdown>
-                        </div>
-                        {feedback.improvement && (
-                          <div className="text-sm text-slate-500 italic">
+                      <div className="flex-grow space-y-2 prose prose-sm prose-slate max-w-none">
+                        <div className={`font-bold ${feedback.isCorrect ? 'text-emerald-700' : 'text-slate-700'} flex items-center justify-between gap-2`}>
+                          <div className="flex-grow">
                             <ReactMarkdown
                               remarkPlugins={[remarkMath]}
                               rehypePlugins={[rehypeKatex]}
@@ -419,8 +445,25 @@ export const PracticePanel: React.FC = () => {
                                 p: ({ children }) => <>{children}</>,
                               }}
                             >
-                              {`Tip: ${feedback.improvement}`}
+                              {feedback.message}
                             </ReactMarkdown>
+                          </div>
+                          <TTSButton text={feedback.message} size={14} />
+                        </div>
+                        {feedback.improvement && (
+                          <div className="text-sm text-slate-500 italic flex items-center justify-between gap-2">
+                             <div className="flex-grow">
+                              <ReactMarkdown
+                                remarkPlugins={[remarkMath]}
+                                rehypePlugins={[rehypeKatex]}
+                                components={{
+                                  p: ({ children }) => <>{children}</>,
+                                }}
+                              >
+                                {`Tip: ${feedback.improvement}`}
+                              </ReactMarkdown>
+                            </div>
+                            <TTSButton text={feedback.improvement} size={12} className="p-1" />
                           </div>
                         )}
                         {feedback.isCorrect && (

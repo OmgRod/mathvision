@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { MathResult } from '../types';
-import { Copy, Check, Info, BookOpen, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
+import { TTSButton } from './TTSButton';
+import { Copy, Check, Info, BookOpen, Sparkles, ChevronLeft, ChevronRight, Volume2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
@@ -75,15 +76,6 @@ export const MathSolution: React.FC<MathSolutionProps> = ({ result }) => {
         </div>
       )}
 
-      {result.overallExplanation && (
-        <div className="max-w-2xl mx-auto p-6 bg-indigo-50/50 rounded-3xl border border-indigo-100 text-indigo-900 text-sm">
-          <p className="font-bold mb-1">General Context:</p>
-          <ReactMarkdown>{result.overallExplanation}</ReactMarkdown>
-        </div>
-      )}
-
-      <Diagram svg={result.mainDiagramSvg} />
-
       {/* Mode Switcher */}
       <div className="flex justify-center">
         <div className="bg-slate-100 p-1 rounded-2xl flex gap-1">
@@ -137,9 +129,12 @@ export const MathSolution: React.FC<MathSolutionProps> = ({ result }) => {
                     {result.parts.length > 1 ? `Part ${activePart.partId} • ` : ''}Step {currentStep + 1} of {activePart.steps.length}
                   </span>
                   
-                  <h4 className="text-xl font-bold text-slate-800 mb-4 px-4">
-                    {activePart.steps[currentStep]?.title}
-                  </h4>
+                  <div className="flex items-center justify-center gap-3 mb-4">
+                    <h4 className="text-xl font-bold text-slate-800 px-4">
+                      {activePart.steps[currentStep]?.title}
+                    </h4>
+                    <TTSButton text={activePart.steps[currentStep]?.title || ''} size={14} />
+                  </div>
                   
                   <div className="math-container text-2xl font-medium text-slate-900 bg-slate-50 px-6 py-4 rounded-2xl border border-slate-100 mb-4">
                     <ReactMarkdown
@@ -209,11 +204,14 @@ export const MathSolution: React.FC<MathSolutionProps> = ({ result }) => {
         ) : (
           <div className="max-w-2xl mx-auto">
             <div className="bg-white rounded-3xl border border-slate-200 p-8 md:p-10 shadow-sm">
-              <div className="flex items-center gap-3 mb-8 pb-6 border-b border-slate-100">
-                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-                  <BookOpen size={20} />
+              <div className="flex items-center justify-between mb-8 pb-6 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                    <BookOpen size={20} />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900">Explanation for Part {activePart.partId}</h3>
                 </div>
-                <h3 className="text-xl font-bold text-slate-900">Explanation for Part {activePart.partId}</h3>
+                <TTSButton text={activePart.explanation} />
               </div>
               
               <div className="prose prose-slate max-w-none">

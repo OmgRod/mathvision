@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { MathResult, QuizQuestion, QuizFeedback } from "./types";
+import { MathResult, QuizQuestion, QuizFeedback, Lesson } from "./types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
 
@@ -18,7 +18,7 @@ export const solveMathEquation = async (input: { image?: string; text?: string; 
     3. explanation: A detailed Markdown explanation (Essay mode).
     4. steps: A list of simplified steps for a carousel (Easy mode).
 
-    BONUS: If a visual diagram (geometry shape, coordinate graph, number line) would help explain a step or the overall problem, generate a clean, minimal SVG string for it under 'diagramSvg' (step-level) or 'mainDiagramSvg' (overall). Use simple shapes and text.
+    BONUS: ONLY if a visual diagram (geometry shape, coordinate graph, number line) is STRICTLY NECESSARY to understand a specific step, generate a clean, minimal SVG string for it under 'diagramSvg' within that step. Do NOT generate diagrams unless they provide critical clarity that text cannot.
   `;
 
   try {
@@ -64,9 +64,7 @@ export const solveMathEquation = async (input: { image?: string; text?: string; 
                 },
                 required: ["partId", "finalAnswer", "explanation", "steps"]
               }
-            },
-            overallExplanation: { type: Type.STRING },
-            mainDiagramSvg: { type: Type.STRING }
+            }
           },
           required: ["parts"]
         }
@@ -77,9 +75,7 @@ export const solveMathEquation = async (input: { image?: string; text?: string; 
     const result = JSON.parse(jsonStr);
     
     return {
-      parts: result.parts || [],
-      overallExplanation: result.overallExplanation,
-      mainDiagramSvg: result.mainDiagramSvg
+      parts: result.parts || []
     };
   } catch (error) {
     console.error("Gemini API Error:", error);
@@ -90,7 +86,7 @@ export const solveMathEquation = async (input: { image?: string; text?: string; 
 export const generateQuizQuestion = async (topic: string): Promise<QuizQuestion> => {
   const prompt = `
     Generate a challenging but solvable math question related to the topic: "${topic}".
-    If appropriate for the topic (e.g., geometry, coordinates, sets), include a 'diagramSvg' (minimal SVG string) to illustrate the question.
+    ONLY if a visual diagram (geometry shape, coordinate graph, number line) is STRICTLY NECESSARY to understand the question, include a 'diagramSvg' (minimal SVG string).
     
     IMPORTANT: Wrap any mathematical expressions within the question text AND the step instructions (titles) using double dollar signs (e.g., $$x^2 + 5x = 0$$) so they can be rendered with KaTeX.
   `;
@@ -166,5 +162,134 @@ export const evaluateStep = async (question: string, expectedMath: string, userM
   } catch (error) {
     console.error("Step Evaluation Error:", error);
     return { isCorrect: false, message: "Error evaluating step. Please try again." };
+  }
+};
+
+export const generateLesson = async (topic: string): Promise<Lesson> => {
+  const prompt = `
+    You are a master math teacher. Create a comprehensive but accessible lesson on the topic: "${topic}".
+    
+    Structure the lesson into 3-4 clear sections.
+    For each section, provide a title and detailed Markdown content that explains the concept, provides an example, and uses LaTeX for math ($$formula$$).
+    
+    Also, provide 2 "Checkpoint Questions" that test the core concepts taught in this lesson.
+    
+    CRITICAL: 
+    - Use LaTeX for ALL math expressions.
+    - Each section can optionally include a 'diagramSvg' (minimal SVG string) ONLY if strictly necessary for visual learners (e.g., a triangle for trigonometry).
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: { parts: [{ text: prompt }] },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            sections: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  title: { type: Type.STRING },
+                  content: { type: Type.STRING },
+                  diagramSvg: { type: Type.STRING }
+                },
+                required: ["title", "content"]
+              }
+            },
+            checkpoints: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  question: { type: Type.STRING },
+                  correctAnswer: { type: Type.STRING },
+                  explanation: { type: Type.STRING }
+                },
+                required: ["question", "correctAnswer", "explanation"]
+              }
+            }
+          },
+          required: ["sections", "checkpoints"]
+        }
+      }
+    });
+
+    const jsonStr = response.text?.trim() || "{}";
+    const data = JSON.parse(jsonStr);
+    return {
+      topic,
+      sections: data.sections,
+      checkpoints: data.checkpoints
+    };
+  } catch (error) {
+    console.error("Gemini Lesson Error:", error);
+    throw error;
+  }
+};
+
+export const evaluateLessonAnswer = async (topic: string, question: string, userAnswer: string, correctAnswer: string): Promise<QuizFeedback> => {
+  const prompt = `
+    A student is taking a lesson on "${topic}".
+    Question: "${question}"
+    Expected Answer (Reference): "${correctAnswer}"
+    Student's Answer: "${userAnswer}"
+    
+    Evaluate if the student's answer is conceptually correct, even if not phrased exactly like the reference.
+    Provide constructive feedback. Use LaTeX for math ($$formula$$).
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: { parts: [{ text: prompt }] },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            isCorrect: { type: Type.BOOLEAN },
+            message: { type: Type.STRING },
+            improvement: { type: Type.STRING }
+          },
+          required: ["isCorrect", "message"]
+        }
+      }
+    });
+
+    const jsonStr = response.text?.trim() || "{}";
+    return JSON.parse(jsonStr);
+  } catch (error) {
+    console.error("Evaluation Error:", error);
+    return { isCorrect: false, message: "I couldn't evaluate your answer right now. Check the reference answer to see if you were right!" };
+  }
+};
+
+export const askLessonClarification = async (topic: string, question: string, context: string): Promise<string> => {
+  const prompt = `
+    A student is learning about "${topic}". 
+    They just read the following lesson content:
+    ---
+    ${context}
+    ---
+    
+    They have a question or need clarification: "${question}".
+    
+    As a helpful tutor, explain it simply. Use Markdown and LaTeX for math ($$formula$$). 
+    Be encouraging and clear. Keep the answer concise (under 150 words).
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: { parts: [{ text: prompt }] }
+    });
+    return response.text?.trim() || "I'm sorry, I'm having trouble connecting to my brain right now. Please try again!";
+  } catch (error) {
+    console.error("Clarification Error:", error);
+    return "I'm sorry, I'm having trouble connecting to my brain right now. Please try again!";
   }
 };

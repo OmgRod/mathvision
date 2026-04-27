@@ -5,13 +5,14 @@ import { ImageUploader } from './components/ImageUploader';
 import { MathSolution } from './components/MathSolution';
 import { CameraInput } from './components/CameraInput';
 import { PracticePanel } from './components/PracticePanel';
+import { LearnPanel } from './components/LearnPanel';
 import { ProcessingState } from './types';
 import { solveMathEquation } from './geminiService';
-import { Loader2, Trash2, RefreshCw, Camera, AlertCircle, Sparkles, BookOpen, PenTool, Brain } from 'lucide-react';
+import { Loader2, Trash2, RefreshCw, Camera, AlertCircle, Sparkles, BookOpen, PenTool, Brain, GraduationCap } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const App: React.FC = () => {
-  const [mode, setMode] = useState<'solver' | 'practice'>('solver');
+  const [mode, setMode] = useState<'solver' | 'practice' | 'learn'>('solver');
   const [image, setImage] = useState<string | null>(null);
   const [textInput, setTextInput] = useState('');
   const [mimeType, setMimeType] = useState<string>('');
@@ -87,12 +88,23 @@ const App: React.FC = () => {
             <Brain size={18} />
             Practice
           </button>
+          <button
+            onClick={() => setMode('learn')}
+            className={`flex items-center gap-2 px-8 py-3 rounded-[1.25rem] text-sm font-black transition-all ${
+              mode === 'learn' 
+                ? 'bg-white text-indigo-600 shadow-xl shadow-indigo-100/50' 
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <GraduationCap size={18} />
+            Learn
+          </button>
         </div>
       </div>
       
       <main className="flex-grow container mx-auto px-4 py-8 max-w-4xl">
         <AnimatePresence mode="wait">
-          {mode === 'solver' ? (
+          {mode === 'solver' && (
             <motion.div 
               key="solver"
               initial={{ opacity: 0, x: -20 }}
@@ -322,7 +334,9 @@ const App: React.FC = () => {
                 </>
               )}
             </motion.div>
-          ) : (
+          )}
+          
+          {mode === 'practice' && (
             <motion.div
               key="practice"
               initial={{ opacity: 0, x: 20 }}
@@ -330,6 +344,17 @@ const App: React.FC = () => {
               exit={{ opacity: 0, x: -20 }}
             >
               <PracticePanel />
+            </motion.div>
+          )}
+
+          {mode === 'learn' && (
+             <motion.div
+              key="learn"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+            >
+              <LearnPanel />
             </motion.div>
           )}
         </AnimatePresence>

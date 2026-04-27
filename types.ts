@@ -15,8 +15,6 @@ export interface MathPart {
 
 export interface MathResult {
   parts: MathPart[];
-  overallExplanation?: string;
-  mainDiagramSvg?: string;
 }
 
 export interface QuizQuestion {
@@ -31,6 +29,24 @@ export interface QuizFeedback {
   isCorrect: boolean;
   message: string;
   improvement?: string;
+}
+
+export interface LessonSection {
+  title: string;
+  content: string; // Markdown
+  diagramSvg?: string;
+}
+
+export interface LessonQuestion {
+  question: string;
+  correctAnswer: string;
+  explanation: string;
+}
+
+export interface Lesson {
+  topic: string;
+  sections: LessonSection[];
+  checkpoints: LessonQuestion[];
 }
 
 export interface ProcessingState {
