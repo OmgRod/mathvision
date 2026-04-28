@@ -6,13 +6,15 @@ import { MathSolution } from './components/MathSolution';
 import { CameraInput } from './components/CameraInput';
 import { PracticePanel } from './components/PracticePanel';
 import { LearnPanel } from './components/LearnPanel';
-import { ProcessingState } from './types';
+import { HistoryPanel } from './components/HistoryPanel';
+import { ProcessingState, HistoryItem } from './types';
 import { solveMathEquation } from './geminiService';
-import { Loader2, Trash2, RefreshCw, Camera, AlertCircle, Sparkles, BookOpen, PenTool, Brain, GraduationCap } from 'lucide-react';
+import { saveToHistory } from './historyService';
+import { Loader2, Trash2, RefreshCw, Camera, AlertCircle, Sparkles, BookOpen, PenTool, Brain, GraduationCap, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const App: React.FC = () => {
-  const [mode, setMode] = useState<'solver' | 'practice' | 'learn'>('solver');
+  const [mode, setMode] = useState<'solver' | 'practice' | 'learn' | 'history'>('solver');
   const [image, setImage] = useState<string | null>(null);
   const [textInput, setTextInput] = useState('');
   const [mimeType, setMimeType] = useState<string>('');
@@ -22,6 +24,22 @@ const App: React.FC = () => {
     error: null,
     result: null,
   });
+
+  const [preLoadedPractice, setPreLoadedPractice] = useState<any>(null);
+  const [preLoadedLesson, setPreLoadedLesson] = useState<any>(null);
+
+  const handleSelectHistoryItem = (item: HistoryItem) => {
+    if (item.type === 'solution') {
+      setState({ isProcessing: false, error: null, result: item.data });
+      setMode('solver');
+    } else if (item.type === 'practice') {
+      setPreLoadedPractice(item.data);
+      setMode('practice');
+    } else if (item.type === 'lesson') {
+      setPreLoadedLesson(item.data);
+      setMode('learn');
+    }
+  };
 
   const handleImageUpload = (base64: string, type: string) => {
     setImage(base64);
@@ -47,6 +65,9 @@ const App: React.FC = () => {
         mimeType: mimeType || undefined 
       });
       setState({ isProcessing: false, error: null, result });
+      
+      // Save to history
+      saveToHistory('solution', textInput || 'Visual Equation', result);
       // Scroll to result
       setTimeout(() => {
         const resultSection = document.getElementById('result-section');
@@ -64,11 +85,15 @@ const App: React.FC = () => {
       <Header />
 
       {/* Mode Switcher */}
-      <div className="container mx-auto px-4 mt-8 flex justify-center">
-        <div className="bg-slate-100 p-1.5 rounded-[1.5rem] flex gap-2">
+      <div className="container mx-auto px-4 mt-8 flex justify-center overflow-x-auto no-scrollbar pb-2">
+        <div className="bg-slate-100 p-1.5 rounded-[1.5rem] flex gap-1 md:gap-2 whitespace-nowrap min-w-max">
           <button
-            onClick={() => setMode('solver')}
-            className={`flex items-center gap-2 px-8 py-3 rounded-[1.25rem] text-sm font-black transition-all ${
+            onClick={() => {
+              setMode('solver');
+              setPreLoadedPractice(null);
+              setPreLoadedLesson(null);
+            }}
+            className={`flex items-center gap-2 px-5 md:px-8 py-3 rounded-[1.25rem] text-xs md:text-sm font-black transition-all ${
               mode === 'solver' 
                 ? 'bg-white text-indigo-600 shadow-xl shadow-indigo-100/50' 
                 : 'text-slate-500 hover:text-slate-700'
@@ -78,8 +103,12 @@ const App: React.FC = () => {
             Solver
           </button>
           <button
-            onClick={() => setMode('practice')}
-            className={`flex items-center gap-2 px-8 py-3 rounded-[1.25rem] text-sm font-black transition-all ${
+            onClick={() => {
+              setMode('practice');
+              setPreLoadedPractice(null);
+              setPreLoadedLesson(null);
+            }}
+            className={`flex items-center gap-2 px-5 md:px-8 py-3 rounded-[1.25rem] text-xs md:text-sm font-black transition-all ${
               mode === 'practice' 
                 ? 'bg-white text-indigo-600 shadow-xl shadow-indigo-100/50' 
                 : 'text-slate-500 hover:text-slate-700'
@@ -89,8 +118,12 @@ const App: React.FC = () => {
             Practice
           </button>
           <button
-            onClick={() => setMode('learn')}
-            className={`flex items-center gap-2 px-8 py-3 rounded-[1.25rem] text-sm font-black transition-all ${
+            onClick={() => {
+              setMode('learn');
+              setPreLoadedPractice(null);
+              setPreLoadedLesson(null);
+            }}
+            className={`flex items-center gap-2 px-5 md:px-8 py-3 rounded-[1.25rem] text-xs md:text-sm font-black transition-all ${
               mode === 'learn' 
                 ? 'bg-white text-indigo-600 shadow-xl shadow-indigo-100/50' 
                 : 'text-slate-500 hover:text-slate-700'
@@ -98,6 +131,21 @@ const App: React.FC = () => {
           >
             <GraduationCap size={18} />
             Learn
+          </button>
+          <button
+            onClick={() => {
+              setMode('history');
+              setPreLoadedPractice(null);
+              setPreLoadedLesson(null);
+            }}
+            className={`flex items-center gap-2 px-5 md:px-8 py-3 rounded-[1.25rem] text-xs md:text-sm font-black transition-all ${
+              mode === 'history' 
+                ? 'bg-white text-indigo-600 shadow-xl shadow-indigo-100/50' 
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <Clock size={18} />
+            History
           </button>
         </div>
       </div>
@@ -343,7 +391,7 @@ const App: React.FC = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
             >
-              <PracticePanel />
+              <PracticePanel initialData={preLoadedPractice} />
             </motion.div>
           )}
 
@@ -354,7 +402,18 @@ const App: React.FC = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
             >
-              <LearnPanel />
+              <LearnPanel initialData={preLoadedLesson} />
+            </motion.div>
+          )}
+
+          {mode === 'history' && (
+            <motion.div
+              key="history"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+            >
+              <HistoryPanel onSelectItem={handleSelectHistoryItem} />
             </motion.div>
           )}
         </AnimatePresence>

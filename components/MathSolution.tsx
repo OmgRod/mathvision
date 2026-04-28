@@ -81,24 +81,24 @@ export const MathSolution: React.FC<MathSolutionProps> = ({ result }) => {
         <div className="bg-slate-100 p-1 rounded-2xl flex gap-1">
           <button
             onClick={() => setMode('easy')}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
+            className={`flex items-center gap-2 px-4 md:px-6 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all ${
               mode === 'easy' 
                 ? 'bg-white text-indigo-600 shadow-sm' 
                 : 'text-slate-500 hover:text-slate-700'
             }`}
           >
-            <Sparkles size={16} />
+            <Sparkles size={14} className="md:w-4 md:h-4" />
             Easy Mode
           </button>
           <button
             onClick={() => setMode('essay')}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
+            className={`flex items-center gap-2 px-4 md:px-6 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all ${
               mode === 'essay' 
                 ? 'bg-white text-indigo-600 shadow-sm' 
                 : 'text-slate-500 hover:text-slate-700'
             }`}
           >
-            <BookOpen size={16} />
+            <BookOpen size={14} className="md:w-4 md:h-4" />
             Essay Mode
           </button>
         </div>
@@ -107,7 +107,7 @@ export const MathSolution: React.FC<MathSolutionProps> = ({ result }) => {
       {activePart && (
         mode === 'easy' ? (
           <div className="max-w-xl mx-auto space-y-6">
-            <div className="relative min-h-[320px] flex items-center justify-center">
+            <div className="relative min-h-[300px] md:min-h-[320px] flex items-center justify-center">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={`${activePartIndex}-${currentStep}`}
@@ -115,7 +115,7 @@ export const MathSolution: React.FC<MathSolutionProps> = ({ result }) => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -50 }}
                   transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                  className="w-full h-full bg-white rounded-[2.5rem] shadow-2xl shadow-indigo-100 border border-slate-100 p-8 flex flex-col items-center justify-center text-center relative overflow-hidden"
+                  className="w-full h-full bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-2xl shadow-indigo-100 border border-slate-100 p-6 md:p-8 flex flex-col items-center justify-center text-center relative overflow-hidden"
                 >
                   <div className="absolute top-0 left-0 w-full h-2 bg-indigo-500/10">
                     <motion.div 
@@ -125,18 +125,18 @@ export const MathSolution: React.FC<MathSolutionProps> = ({ result }) => {
                     />
                   </div>
                   
-                  <span className="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-4">
+                  <span className="text-[10px] md:text-xs font-bold text-indigo-500 uppercase tracking-widest mb-4">
                     {result.parts.length > 1 ? `Part ${activePart.partId} • ` : ''}Step {currentStep + 1} of {activePart.steps.length}
                   </span>
                   
-                  <div className="flex items-center justify-center gap-3 mb-4">
-                    <h4 className="text-xl font-bold text-slate-800 px-4">
+                  <div className="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-3 mb-4">
+                    <h4 className="text-lg md:text-xl font-bold text-slate-800 px-4">
                       {activePart.steps[currentStep]?.title}
                     </h4>
                     <TTSButton text={activePart.steps[currentStep]?.title || ''} size={14} />
                   </div>
                   
-                  <div className="math-container text-2xl font-medium text-slate-900 bg-slate-50 px-6 py-4 rounded-2xl border border-slate-100 mb-4">
+                  <div className="math-container text-xl md:text-2xl font-medium text-slate-900 bg-slate-50 px-4 md:px-6 py-4 rounded-2xl border border-slate-100 mb-4 w-full overflow-x-auto">
                     <ReactMarkdown
                       remarkPlugins={[remarkMath]}
                       rehypePlugins={[rehypeKatex]}
@@ -149,23 +149,23 @@ export const MathSolution: React.FC<MathSolutionProps> = ({ result }) => {
                 </motion.div>
               </AnimatePresence>
 
-              {/* Navigation Buttons */}
-              <div className="absolute -left-4 md:-left-12 top-1/2 -translate-y-1/2">
+              {/* Navigation Buttons - Adjusted for mobile */}
+              <div className="absolute -left-2 md:-left-12 top-1/2 -translate-y-1/2 z-10">
                 <button
                   onClick={prevStep}
                   disabled={currentStep === 0}
-                  className="p-3 bg-white rounded-full shadow-lg border border-slate-100 text-slate-400 hover:text-indigo-600 disabled:opacity-0 transition-all"
+                  className="p-2 md:p-3 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-slate-100 text-slate-400 hover:text-indigo-600 disabled:opacity-0 transition-all"
                 >
-                  <ChevronLeft size={24} />
+                  <ChevronLeft size={20} className="md:w-6 md:h-6" />
                 </button>
               </div>
-              <div className="absolute -right-4 md:-right-12 top-1/2 -translate-y-1/2">
+              <div className="absolute -right-2 md:-right-12 top-1/2 -translate-y-1/2 z-10">
                 <button
                   onClick={nextStep}
                   disabled={currentStep === activePart.steps.length - 1}
-                  className="p-3 bg-white rounded-full shadow-lg border border-slate-100 text-slate-400 hover:text-indigo-600 disabled:opacity-0 transition-all"
+                  className="p-2 md:p-3 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-slate-100 text-slate-400 hover:text-indigo-600 disabled:opacity-0 transition-all"
                 >
-                  <ChevronRight size={24} />
+                  <ChevronRight size={20} className="md:w-6 md:h-6" />
                 </button>
               </div>
             </div>

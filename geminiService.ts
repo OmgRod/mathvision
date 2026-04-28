@@ -167,16 +167,22 @@ export const evaluateStep = async (question: string, expectedMath: string, userM
 
 export const generateLesson = async (topic: string): Promise<Lesson> => {
   const prompt = `
-    You are a master math teacher. Create a comprehensive but accessible lesson on the topic: "${topic}".
+    You are a master math teacher who makes learning FUN and SIMPLE. Create a lesson on: "${topic}".
     
-    Structure the lesson into 3-4 clear sections.
-    For each section, provide a title and detailed Markdown content that explains the concept, provides an example, and uses LaTeX for math ($$formula$$).
+    TONE: Super friendly, encouraging, and clear. Avoid heavy jargon. Use real-world analogies (e.g., "Think of an equation like a balanced playground seesaw").
     
-    Also, provide 2 "Checkpoint Questions" that test the core concepts taught in this lesson.
+    STRUCTURE:
+    1. Hook: Start with a "Why does this matter?" or a fun fact.
+    2. The "Secret Sauce": Explain the concept in the simplest possible way.
+    3. Practice Lap: Walk through one easy example.
+    4. Pro Tip: A clever shortcut or common mistake to avoid.
+
+    For each section, provide a title and Markdown content. Use LaTeX for math ($$formula$$). 
     
     CRITICAL: 
+    - Keep it simple enough for someone seeing it for the first time.
     - Use LaTeX for ALL math expressions.
-    - Each section can optionally include a 'diagramSvg' (minimal SVG string) ONLY if strictly necessary for visual learners (e.g., a triangle for trigonometry).
+    - If a simple diagram (like a sketch of a graph or a shape) helps, include 'diagramSvg'.
   `;
 
   try {

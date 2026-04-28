@@ -49,6 +49,14 @@ export interface Lesson {
   checkpoints: LessonQuestion[];
 }
 
+export interface HistoryItem {
+  id: string;
+  timestamp: number;
+  type: 'solution' | 'practice' | 'lesson';
+  topic: string;
+  data: any; // MathResult | QuizQuestion | Lesson
+}
+
 export interface ProcessingState {
   isProcessing: boolean;
   error: string | null;

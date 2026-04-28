@@ -21,19 +21,21 @@ import {
 } from 'lucide-react';
 import { TTSButton } from './TTSButton';
 import { MathKeyboard } from './MathKeyboard';
+import { saveToHistory } from '../historyService';
 import { generateQuizQuestion, evaluateStep } from '../geminiService';
 import { QuizQuestion, QuizFeedback } from '../types';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
+import { MathInput } from './MathInput';
 import { PRACTICE_TOPICS, MathTopic } from '../constants';
 
-export const PracticePanel: React.FC = () => {
-  const [topic, setTopic] = useState<string | null>(null);
+export const PracticePanel: React.FC<{ initialData?: QuizQuestion }> = ({ initialData }) => {
+  const [topic, setTopic] = useState<string | null>(initialData ? 'History Item' : null);
   const [customTopic, setCustomTopic] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [question, setQuestion] = useState<QuizQuestion | null>(null);
+  const [question, setQuestion] = useState<QuizQuestion | null>(initialData || null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [userAnswer, setUserAnswer] = useState('');
   const [feedback, setFeedback] = useState<QuizFeedback | null>(null);
@@ -84,6 +86,7 @@ export const PracticePanel: React.FC = () => {
     try {
       const q = await generateQuizQuestion(selectedTopic);
       setQuestion(q);
+      saveToHistory('practice', selectedTopic, q);
     } catch (err) {
       console.error(err);
       alert("Failed to start practice. Please try again.");
@@ -172,35 +175,35 @@ export const PracticePanel: React.FC = () => {
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-100/50 space-y-6">
-          <div className="flex flex-col md:flex-row gap-4">
+        <div className="bg-white p-4 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-100/50 space-y-4 md:space-y-6">
+          <div className="flex flex-col md:flex-row gap-3 md:gap-4">
             <div className="relative flex-grow">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input 
                 type="text"
-                placeholder="Search topics (e.g. Calculus, Equations...)"
+                placeholder="Search topics (e.g. Calculus...)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2x focus:border-indigo-500 transition-all font-bold text-slate-700"
+                className="w-full pl-11 pr-4 py-3 md:py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 transition-all font-bold text-slate-700 text-sm md:text-base"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 md:flex gap-2">
               <div className="relative">
-                <GraduationCap className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                 <select 
                   value={selectedLevel}
                   onChange={(e) => setSelectedLevel(e.target.value)}
-                  className="pl-11 pr-8 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl appearance-none font-bold text-slate-600 focus:border-indigo-500 transition-all cursor-pointer"
+                  className="w-full pl-10 pr-6 py-3 md:py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl appearance-none font-bold text-slate-600 focus:border-indigo-500 transition-all cursor-pointer text-xs md:text-sm"
                 >
                   {levels.map(l => <option key={l} value={l}>{l}</option>)}
                 </select>
               </div>
               <div className="relative">
-                <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                 <select 
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="pl-11 pr-8 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl appearance-none font-bold text-slate-600 focus:border-indigo-500 transition-all cursor-pointer"
+                  className="w-full pl-10 pr-6 py-3 md:py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl appearance-none font-bold text-slate-600 focus:border-indigo-500 transition-all cursor-pointer text-xs md:text-sm"
                 >
                   {categories.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
@@ -254,51 +257,50 @@ export const PracticePanel: React.FC = () => {
             </div>
           )}
           
-          <div className="pt-8">
             {!showCustomInput ? (
               <button
                 onClick={() => setShowCustomInput(true)}
-                className="w-full p-8 bg-slate-900 text-white border-2 border-slate-900 rounded-[2.5rem] hover:bg-slate-800 transition-all text-center flex flex-col items-center justify-center gap-3 group shadow-2xl shadow-slate-200"
+                className="w-full p-6 md:p-8 bg-slate-900 text-white border-2 border-slate-900 rounded-[2rem] md:rounded-[2.5rem] hover:bg-slate-800 transition-all text-center flex flex-col items-center justify-center gap-3 group shadow-2xl shadow-slate-200"
               >
                 <div className="p-3 bg-white/10 rounded-2xl group-hover:bg-white/20 transition-colors">
                   <Plus size={24} />
                 </div>
                 <div>
-                  <span className="text-lg font-black block">Other / Custom Topic</span>
-                  <span className="text-sm text-slate-400 font-medium italic">Type anything you want to practice</span>
+                  <span className="text-base md:text-lg font-black block">Other / Custom Topic</span>
+                  <span className="text-xs md:text-sm text-slate-400 font-medium italic">Type anything you want to practice</span>
                 </div>
               </button>
             ) : (
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-10 bg-white border-4 border-indigo-600 rounded-[3rem] shadow-2xl shadow-indigo-100 space-y-6"
+                className="p-6 md:p-10 bg-white border-4 border-indigo-600 rounded-[2rem] md:rounded-[3rem] shadow-2xl shadow-indigo-100 space-y-4 md:space-y-6"
               >
                 <div className="flex items-center gap-3">
-                  <Sparkles className="text-amber-500" size={24} />
-                  <label className="block text-xl font-black text-slate-900">What do you want to learn today?</label>
+                  <Sparkles className="text-amber-500" size={20} />
+                  <label className="block text-lg md:text-xl font-black text-slate-900">What do you want to learn today?</label>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex flex-col md:flex-row gap-4">
                   <input
                     type="text"
                     value={customTopic}
                     onChange={(e) => setCustomTopic(e.target.value)}
-                    placeholder="e.g. Advanced Calculus: Green's Theorem"
-                    className="flex-grow px-8 py-5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 transition-all font-bold text-lg"
+                    placeholder="e.g. Calculus: Green's Theorem"
+                    className="flex-grow px-6 md:px-8 py-4 md:py-5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 transition-all font-bold text-base md:text-lg"
                     onKeyDown={(e) => e.key === 'Enter' && customTopic && startPractice(customTopic)}
                     autoFocus
                   />
                   <button
                     onClick={() => customTopic && startPractice(customTopic)}
                     disabled={!customTopic || loading}
-                    className="px-10 py-5 bg-indigo-600 text-white rounded-2xl font-black text-lg hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-xl shadow-indigo-200"
+                    className="px-8 md:px-10 py-4 md:py-5 bg-indigo-600 text-white rounded-2xl font-black text-base md:text-lg hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-xl shadow-indigo-200"
                   >
                     Launch
                   </button>
                 </div>
                 <button 
                   onClick={() => setShowCustomInput(false)}
-                  className="px-6 py-2 bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-full text-sm font-bold transition-all"
+                  className="px-6 py-2 bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-full text-xs font-bold transition-all"
                 >
                   Cancel
                 </button>
@@ -306,9 +308,8 @@ export const PracticePanel: React.FC = () => {
             )}
           </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
@@ -330,23 +331,23 @@ export const PracticePanel: React.FC = () => {
       )}
 
       {question && !isFinished && (
-        <div className="space-y-8">
+        <div className="space-y-6 md:space-y-8">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-indigo-50"
+            className="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-indigo-50"
           >
             <div className="flex justify-between items-start mb-6">
-              <span className="px-4 py-1.5 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-full uppercase tracking-wider">
+              <span className="px-3 md:px-4 py-1.5 bg-indigo-50 text-indigo-600 text-[10px] md:text-xs font-bold rounded-full uppercase tracking-wider">
                 {topic}
               </span>
-              <div className="flex items-center gap-2 text-slate-400 font-mono text-xs">
+              <div className="flex items-center gap-2 text-slate-400 font-mono text-[10px] md:text-xs">
                 <span>Score: {score}</span>
               </div>
             </div>
             
-            <div className="flex justify-between items-center mb-6">
-              <div className="text-2xl font-black text-slate-900 prose prose-slate max-w-none flex-grow">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+              <div className="text-xl md:text-2xl font-black text-slate-900 prose prose-slate max-w-none flex-grow">
                 <ReactMarkdown
                   remarkPlugins={[remarkMath]}
                   rehypePlugins={[rehypeKatex]}
@@ -392,16 +393,15 @@ export const PracticePanel: React.FC = () => {
                     }}
                   />
                   <div className="relative">
-                    <input
-                      type="text"
+                    <MathInput
                       value={userAnswer}
-                      onChange={(e) => setUserAnswer(e.target.value)}
+                      onChange={setUserAnswer}
                       disabled={feedback?.isCorrect || loading}
                       placeholder="e.g. 2x = 10"
-                      className="w-full pl-6 pr-24 py-5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 transition-all font-mono text-lg"
-                      onKeyDown={(e) => e.key === 'Enter' && handleNextStep()}
+                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl focus-within:border-indigo-500 transition-all"
+                      onEnter={handleNextStep}
                     />
-                    <div className="absolute right-2 top-2 bottom-2 flex gap-1">
+                    <div className="absolute right-1.5 top-1.5 bottom-1.5 flex gap-1 z-10">
                       <button
                         onClick={() => setIsKeyboardOpen(!isKeyboardOpen)}
                         className="p-3 text-indigo-400 hover:text-indigo-600 bg-indigo-50 rounded-xl transition-colors"

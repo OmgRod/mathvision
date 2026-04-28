@@ -40,7 +40,7 @@ export const MathKeyboard: React.FC<MathKeyboardProps> = ({ onInsert, isOpen, on
           initial={{ opacity: 0, y: 10, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 10, scale: 0.95 }}
-          className="absolute bottom-full left-0 right-0 mb-4 bg-white rounded-3xl border border-slate-200 shadow-2xl p-4 z-50 overflow-hidden"
+          className="absolute bottom-full left-0 right-0 mb-4 bg-white rounded-3xl border border-slate-200 shadow-2xl p-4 z-50 overflow-hidden mx-2 md:mx-0"
         >
           <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-2">
             <div className="flex items-center gap-2 text-indigo-600">
@@ -51,17 +51,24 @@ export const MathKeyboard: React.FC<MathKeyboardProps> = ({ onInsert, isOpen, on
               onClick={onClose}
               className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors"
             >
-              <X size={14} />
+              <X size={16} />
             </button>
           </div>
           
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
             {SYMBOLS.map((s, idx) => (
               <button
                 key={idx}
-                onClick={() => onInsert(s.value)}
+                onClick={() => {
+                  const activeMf = (window as any).activeMathField;
+                  if (activeMf) {
+                    activeMf.insert(s.value);
+                  } else {
+                    onInsert(s.value);
+                  }
+                }}
                 className={`
-                  p-3 rounded-xl font-bold text-sm transition-all hover:scale-105 active:scale-95
+                  p-3 md:p-4 rounded-xl font-bold text-xs md:text-sm transition-all hover:scale-105 active:scale-95
                   ${s.type === 'variable' ? 'bg-indigo-50 text-indigo-600' : ''}
                   ${s.type === 'operator' ? 'bg-slate-50 text-slate-600' : ''}
                   ${s.type === 'function' ? 'bg-amber-50 text-amber-600' : ''}
