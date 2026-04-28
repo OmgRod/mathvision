@@ -101,8 +101,8 @@ export const TTSButton: React.FC<TTSButtonProps> = ({ text, className = '', size
       onClick={toggleSpeech}
       className={`p-2 rounded-lg transition-all duration-200 ${
         isSpeaking 
-          ? 'bg-indigo-100 text-indigo-600' 
-          : 'bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600'
+          ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400' 
+          : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-600 dark:hover:text-slate-300'
       } ${className}`}
       title={isSpeaking ? "Stop speaking" : "Listen to this text"}
       aria-label={isSpeaking ? "Stop speaking" : "Listen to this text"}

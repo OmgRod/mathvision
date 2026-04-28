@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { ImageUploader } from './components/ImageUploader';
 import { MathSolution } from './components/MathSolution';
@@ -21,7 +21,24 @@ import { motion, AnimatePresence } from 'motion/react';
 const App: React.FC = () => {
   const [mode, setMode] = useState<'solver' | 'practice' | 'learn' | 'history' | 'profile'>('solver');
   const [image, setImage] = useState<string | null>(null);
-  
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('theme');
+      if (saved === 'light' || saved === 'dark') return saved;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return 'light';
+  });
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    root.classList.remove('light', 'dark');
+    root.classList.add(theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
+
   React.useEffect(() => {
     const handleXPNavigate = () => setMode('profile');
     const handleLearnTopic = (e: any) => {
@@ -133,12 +150,12 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#fdfdfd]">
-      <Header />
+    <div className="min-h-screen flex flex-col bg-[#fdfdfd] dark:bg-[#0f172a] transition-colors duration-300">
+      <Header theme={theme} onToggleTheme={toggleTheme} />
 
       {/* Mode Switcher */}
       <div className="container mx-auto px-4 mt-8 flex justify-center overflow-x-auto no-scrollbar pb-2">
-        <div className="bg-slate-100 p-1.5 rounded-[1.5rem] flex gap-1 md:gap-2 whitespace-nowrap min-w-max">
+        <div className="bg-slate-100 dark:bg-slate-800 p-1.5 rounded-[1.5rem] flex gap-1 md:gap-2 whitespace-nowrap min-w-max transition-colors">
           <button
             onClick={() => {
               setMode('solver');
@@ -147,8 +164,8 @@ const App: React.FC = () => {
             }}
             className={`flex items-center gap-2 px-5 md:px-8 py-3 rounded-[1.25rem] text-xs md:text-sm font-black transition-all ${
               mode === 'solver' 
-                ? 'bg-white text-indigo-600 shadow-xl shadow-indigo-100/50' 
-                : 'text-slate-500 hover:text-slate-700'
+                ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-xl shadow-indigo-100/50 dark:shadow-none' 
+                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
             <PenTool size={18} />
@@ -162,8 +179,8 @@ const App: React.FC = () => {
             }}
             className={`flex items-center gap-2 px-5 md:px-8 py-3 rounded-[1.25rem] text-xs md:text-sm font-black transition-all ${
               mode === 'practice' 
-                ? 'bg-white text-indigo-600 shadow-xl shadow-indigo-100/50' 
-                : 'text-slate-500 hover:text-slate-700'
+                ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-xl shadow-indigo-100/50 dark:shadow-none' 
+                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
             <Brain size={18} />
@@ -177,8 +194,8 @@ const App: React.FC = () => {
             }}
             className={`flex items-center gap-2 px-5 md:px-8 py-3 rounded-[1.25rem] text-xs md:text-sm font-black transition-all ${
               mode === 'learn' 
-                ? 'bg-white text-indigo-600 shadow-xl shadow-indigo-100/50' 
-                : 'text-slate-500 hover:text-slate-700'
+                ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-xl shadow-indigo-100/50 dark:shadow-none' 
+                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
             <GraduationCap size={18} />
@@ -192,8 +209,8 @@ const App: React.FC = () => {
             }}
             className={`flex items-center gap-2 px-5 md:px-8 py-3 rounded-[1.25rem] text-xs md:text-sm font-black transition-all ${
               mode === 'history' 
-                ? 'bg-white text-indigo-600 shadow-xl shadow-indigo-100/50' 
-                : 'text-slate-500 hover:text-slate-700'
+                ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-xl shadow-indigo-100/50 dark:shadow-none' 
+                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
             <Clock size={18} />
@@ -218,15 +235,15 @@ const App: React.FC = () => {
                   <motion.h2 
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight"
+                    className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tight"
                   >
-                    Solve Math with <span className="text-indigo-600">AI Precision</span>
+                    Solve Math with <span className="text-indigo-600 dark:text-indigo-400">AI Precision</span>
                   </motion.h2>
                   <motion.p 
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="text-lg text-slate-500 max-w-2xl mx-auto"
+                    className="text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto"
                   >
                     Snap a photo or type in your equation. Get instant, step-by-step solutions in two modes: Easy for quick understanding or Essay for deep learning.
                   </motion.p>
@@ -238,39 +255,39 @@ const App: React.FC = () => {
                 {!image ? (
                   <div className="w-full max-w-2xl space-y-8">
                     <div className="space-y-4">
-                      <label className="text-sm font-bold text-slate-400 uppercase tracking-widest px-1">Type your question</label>
+                      <label className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">Type your question</label>
                       <textarea
                         value={textInput}
                         onChange={(e) => setTextInput(e.target.value)}
                         placeholder="e.g. What is the derivative of x^2 + 5x?"
-                        className="w-full h-32 px-8 py-6 bg-white border-2 border-slate-100 rounded-[2rem] focus:border-indigo-500 focus:ring-0 transition-all font-medium text-lg resize-none shadow-sm"
+                        className="w-full h-32 px-8 py-6 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-[2rem] focus:border-indigo-500 focus:ring-0 transition-all font-medium text-lg resize-none shadow-sm dark:text-white"
                       />
                     </div>
 
                     {!textInput && (
                       <>
-                        <div className="flex items-center gap-4 text-slate-300">
-                          <div className="h-px flex-grow bg-slate-200"></div>
+                        <div className="flex items-center gap-4 text-slate-300 dark:text-slate-700">
+                          <div className="h-px flex-grow bg-slate-200 dark:bg-slate-700"></div>
                           <span className="text-sm font-bold uppercase tracking-widest">or upload image</span>
-                          <div className="h-px flex-grow bg-slate-200"></div>
+                          <div className="h-px flex-grow bg-slate-200 dark:bg-slate-700"></div>
                         </div>
 
                         <ImageUploader onUpload={handleImageUpload} />
                         
-                        <div className="flex items-center gap-4 text-slate-300">
-                          <div className="h-px flex-grow bg-slate-200"></div>
+                        <div className="flex items-center gap-4 text-slate-300 dark:text-slate-700">
+                          <div className="h-px flex-grow bg-slate-200 dark:bg-slate-700"></div>
                           <span className="text-sm font-bold uppercase tracking-widest">or use camera</span>
-                          <div className="h-px flex-grow bg-slate-200"></div>
+                          <div className="h-px flex-grow bg-slate-200 dark:bg-slate-700"></div>
                         </div>
 
                         <button
                           onClick={() => setShowCamera(true)}
-                          className="w-full py-6 bg-white border-2 border-slate-200 rounded-3xl flex flex-col items-center gap-3 hover:border-indigo-500 hover:bg-indigo-50/30 transition-all group"
+                          className="w-full py-6 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-3xl flex flex-col items-center gap-3 hover:border-indigo-500 hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10 transition-all group"
                         >
-                          <div className="p-4 bg-slate-100 rounded-2xl text-slate-400 group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors">
+                          <div className="p-4 bg-slate-100 dark:bg-slate-700 rounded-2xl text-slate-400 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                             <Camera size={32} />
                           </div>
-                          <span className="font-bold text-slate-700">Open Camera</span>
+                          <span className="font-bold text-slate-700 dark:text-slate-200">Open Camera</span>
                         </button>
                       </>
                     )}
@@ -280,7 +297,7 @@ const App: React.FC = () => {
                         <button
                           onClick={handleSolve}
                           disabled={state.isProcessing}
-                          className="w-full py-5 bg-indigo-600 text-white font-black text-xl rounded-3xl hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 shadow-2xl shadow-indigo-200 hover:translate-y-[-4px] active:translate-y-[0px]"
+                          className="w-full py-5 bg-indigo-600 text-white font-black text-xl rounded-3xl hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 shadow-2xl shadow-indigo-200 dark:shadow-none hover:translate-y-[-4px] active:translate-y-[0px]"
                         >
                           {state.isProcessing ? (
                             <>
@@ -303,7 +320,7 @@ const App: React.FC = () => {
                   <div className="w-full max-w-lg space-y-6">
                     <motion.div 
                       layoutId="image-preview"
-                      className="relative group rounded-[2.5rem] overflow-hidden border border-slate-200 bg-white shadow-2xl shadow-slate-200"
+                      className="relative group rounded-[2.5rem] overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-2xl shadow-slate-200 dark:shadow-none"
                     >
                       <img 
                         src={image} 
@@ -313,7 +330,7 @@ const App: React.FC = () => {
                       <div className="absolute top-6 right-6 flex gap-2">
                         <button 
                           onClick={clearInput}
-                          className="p-3 bg-white/90 backdrop-blur-md text-red-500 rounded-full shadow-xl hover:bg-red-500 hover:text-white transition-all transform hover:scale-110"
+                          className="p-3 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md text-red-500 rounded-full shadow-xl hover:bg-red-500 hover:text-white transition-all transform hover:scale-110"
                           title="Remove image"
                         >
                           <Trash2 size={20} />
@@ -326,7 +343,7 @@ const App: React.FC = () => {
                         <button
                           onClick={handleSolve}
                           disabled={state.isProcessing}
-                          className="w-full py-5 bg-indigo-600 text-white font-black text-xl rounded-3xl hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 shadow-2xl shadow-indigo-200 hover:translate-y-[-4px] active:translate-y-[0px]"
+                          className="w-full py-5 bg-indigo-600 text-white font-black text-xl rounded-3xl hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 shadow-2xl shadow-indigo-200 dark:shadow-none hover:translate-y-[-4px] active:translate-y-[0px]"
                         >
                           {state.isProcessing ? (
                             <>
@@ -345,7 +362,7 @@ const App: React.FC = () => {
                        <div className="flex justify-center">
                         <button
                           onClick={clearInput}
-                          className="flex items-center gap-2 px-8 py-4 bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 rounded-full font-black transition-all text-sm shadow-sm"
+                          className="flex items-center gap-2 px-8 py-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-full font-black transition-all text-sm shadow-sm"
                         >
                           <RefreshCw size={16} />
                           Solve Another Word Problem
@@ -360,16 +377,16 @@ const App: React.FC = () => {
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="max-w-2xl mx-auto p-8 bg-red-50 border border-red-100 text-red-700 rounded-[2rem] shadow-xl shadow-red-50"
+                  className="max-w-2xl mx-auto p-8 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400 rounded-[2rem] shadow-xl shadow-red-50 dark:shadow-none"
                 >
                   <div className="flex items-center gap-4 mb-4">
                     <AlertCircle className="shrink-0" size={24} />
                     <p className="font-black text-lg">Processing Error</p>
                   </div>
-                  <p className="text-sm opacity-80 mb-6 leading-relaxed">{state.error}</p>
+                  <p className="text-sm opacity-80 mb-6 leading-relaxed text-red-600 dark:text-red-400/80">{state.error}</p>
                   <button 
                     onClick={handleSolve}
-                    className="w-full py-4 bg-red-100 hover:bg-red-200 rounded-2xl text-sm font-black tracking-wide uppercase transition-colors"
+                    className="w-full py-4 bg-red-100 dark:bg-red-900/20 hover:bg-red-200 dark:hover:bg-red-900/40 rounded-2xl text-sm font-black tracking-wide uppercase transition-colors"
                   >
                     Try Again
                   </button>
@@ -387,31 +404,31 @@ const App: React.FC = () => {
                 <>
                   {/* Features Section */}
                   <section id="features" className="grid md:grid-cols-3 gap-6 py-12">
-                    <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-100/50">
-                      <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6">
+                    <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-xl shadow-slate-100/50 dark:shadow-none">
+                      <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center mb-6">
                         <Camera size={24} />
                       </div>
-                      <h3 className="text-xl font-bold text-slate-900 mb-2">Smart Capture</h3>
-                      <p className="text-slate-500 text-sm leading-relaxed">Use your camera or upload images. Our AI recognizes handwriting and complex symbols instantly.</p>
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Smart Capture</h3>
+                      <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Use your camera or upload images. Our AI recognizes handwriting and complex symbols instantly.</p>
                     </div>
-                    <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-100/50">
-                      <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-6">
+                    <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-xl shadow-slate-100/50 dark:shadow-none">
+                      <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mb-6">
                         <Sparkles size={24} />
                       </div>
-                      <h3 className="text-xl font-bold text-slate-900 mb-2">Dual Modes</h3>
-                      <p className="text-slate-500 text-sm leading-relaxed">Choose between "Easy Mode" for quick card-based steps or "Essay Mode" for detailed mathematical proofs.</p>
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Dual Modes</h3>
+                      <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Choose between "Easy Mode" for quick card-based steps or "Essay Mode" for detailed mathematical proofs.</p>
                     </div>
-                    <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-100/50">
-                      <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mb-6">
+                    <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-xl shadow-slate-100/50 dark:shadow-none">
+                      <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-2xl flex items-center justify-center mb-6">
                         <BookOpen size={24} />
                       </div>
-                      <h3 className="text-xl font-bold text-slate-900 mb-2">Word Questions</h3>
-                      <p className="text-slate-500 text-sm leading-relaxed">Type your math questions or describe problems. Our AI understands plain language and solves it.</p>
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Word Questions</h3>
+                      <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Type your math questions or describe problems. Our AI understands plain language and solves it.</p>
                     </div>
                   </section>
 
                   {/* How it works Section */}
-                  <section id="how-it-works" className="py-12 bg-indigo-600 rounded-[3rem] p-12 text-white relative overflow-hidden shadow-2xl shadow-indigo-200">
+                  <section id="how-it-works" className="py-12 bg-indigo-600 dark:bg-indigo-700 rounded-[3rem] p-12 text-white relative overflow-hidden shadow-2xl shadow-indigo-200 dark:shadow-none">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
                     <div className="relative z-10 max-w-2xl">
                       <h2 className="text-3xl font-black mb-6 tracking-tight">Master Math Step-by-Step</h2>
@@ -482,10 +499,10 @@ const App: React.FC = () => {
         </AnimatePresence>
       </main>
 
-      <footer className="py-12 border-t border-slate-100 text-center text-slate-400 text-sm">
+      <footer className="py-12 border-t border-slate-100 dark:border-slate-800 text-center text-slate-400 text-sm transition-colors">
         <div className="flex justify-center gap-6 mb-6">
-          <button onClick={() => setMode('solver')} className="hover:text-indigo-600 font-medium">Solver</button>
-          <button onClick={() => setShowHelp(true)} className="hover:text-indigo-600 font-medium">Support & Learn More</button>
+          <button onClick={() => setMode('solver')} className="hover:text-indigo-600 dark:hover:text-indigo-400 font-medium">Solver</button>
+          <button onClick={() => setShowHelp(true)} className="hover:text-indigo-600 dark:hover:text-indigo-400 font-medium">Support & Learn More</button>
         </div>
         <p className="font-medium">Simple solutions for complex problems. &copy; {new Date().getFullYear()} MathVision AI.</p>
       </footer>

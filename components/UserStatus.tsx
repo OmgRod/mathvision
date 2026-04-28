@@ -26,14 +26,14 @@ export const UserStatus: React.FC = () => {
   return (
     <div 
       onClick={() => window.dispatchEvent(new Event('navigate_profile'))}
-      className="flex items-center gap-4 bg-white/50 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 shadow-sm transition-all hover:shadow-md cursor-pointer active:scale-95 active:shadow-inner"
+      className="flex items-center gap-4 bg-white/50 dark:bg-slate-800/50 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 dark:border-slate-700/50 shadow-sm transition-all hover:shadow-md cursor-pointer active:scale-95 active:shadow-inner"
     >
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-1.5">
            <Star size={12} className="text-amber-400 fill-amber-400" />
-           <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 leading-none">LVL {profile.level}</span>
+           <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 leading-none">LVL {profile.level}</span>
         </div>
-        <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+        <div className="w-16 h-1.5 bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden">
           <motion.div 
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
@@ -42,9 +42,9 @@ export const UserStatus: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex items-center gap-2.5 border-l border-slate-200 pl-4">
+      <div className="flex items-center gap-2.5 border-l border-slate-200 dark:border-slate-700 pl-4">
         <div className="relative">
-          <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+          <div className="p-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg">
             <Trophy size={14} />
           </div>
           <AnimatePresence>
@@ -53,7 +53,7 @@ export const UserStatus: React.FC = () => {
                 initial={{ opacity: 0, y: 0 }}
                 animate={{ opacity: 1, y: -15 }}
                 exit={{ opacity: 0 }}
-                className="absolute -top-3 -right-3 bg-indigo-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full"
+                className="absolute -top-3 -right-3 bg-indigo-600 dark:bg-indigo-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full"
               >
                 +XP
               </motion.div>
@@ -61,8 +61,8 @@ export const UserStatus: React.FC = () => {
           </AnimatePresence>
         </div>
         <div className="flex flex-col">
-          <span className="text-sm font-black text-slate-900 leading-none">{profile.xp}</span>
-          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter leading-none mt-1">TOTAL XP</span>
+          <span className="text-sm font-black text-slate-900 dark:text-white leading-none">{profile.xp}</span>
+          <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter leading-none mt-1">TOTAL XP</span>
         </div>
       </div>
     </div>

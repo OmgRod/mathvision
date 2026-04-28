@@ -105,7 +105,7 @@ export const MathInput: React.FC<MathInputProps> = ({
   const MathField = 'math-field' as any;
 
   return (
-    <div className={`math-field-container relative flex items-center ${className}`}>
+    <div className={`math-field-container relative flex items-center transition-colors ${className}`}>
       <MathField
         ref={mfRef}
         onInput={handleInput}
@@ -120,7 +120,10 @@ export const MathInput: React.FC<MathInputProps> = ({
           background: 'transparent',
           '--caret-color': '#4f46e5',
           '--selection-background-color': '#e0e7ff',
+          '--text-font-family': 'inherit',
+          '--contains-highlight-background-color': 'rgba(79, 70, 229, 0.1)',
         }}
+        className="dark:text-white"
       >
         {value}
       </MathField>
@@ -131,8 +134,8 @@ export const MathInput: React.FC<MathInputProps> = ({
         title={isMathMode ? "Switch to Text Mode" : "Switch to Math Mode"}
         className={`absolute right-4 p-2 rounded-xl transition-all shadow-sm ${
           isMathMode 
-            ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
-            : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+            ? 'bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400' 
+            : 'bg-slate-200 text-slate-600 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
         }`}
         style={{ right: `calc(${paddingRight} + 12px)` }}
       >
@@ -140,7 +143,7 @@ export const MathInput: React.FC<MathInputProps> = ({
       </button>
 
       {!value && placeholder && (
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-lg">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none text-lg">
           {placeholder}
         </div>
       )}

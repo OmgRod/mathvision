@@ -269,9 +269,9 @@ export const Whiteboard: React.FC<WhiteboardProps> = ({ onClose, title = "Scratc
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`fixed bottom-6 right-6 z-50 bg-white rounded-[2rem] shadow-2xl border border-slate-100 overflow-hidden w-[90vw] md:w-[600px] transition-all duration-300 ${isMinimized ? 'h-16' : 'h-auto'}`}
+      className={`fixed bottom-6 right-6 z-50 bg-white dark:bg-slate-800 rounded-[2rem] shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden w-[90vw] md:w-[600px] transition-all duration-300 ${isMinimized ? 'h-16' : 'h-auto'}`}
     >
-      <div className="flex items-center justify-between p-4 bg-slate-900 text-white cursor-pointer" onClick={() => setIsMinimized(!isMinimized)}>
+      <div className="flex items-center justify-between p-4 bg-slate-900 dark:bg-slate-950 text-white cursor-pointer" onClick={() => setIsMinimized(!isMinimized)}>
         <div className="flex items-center gap-3">
           <div className="p-2 bg-white/10 rounded-xl">
              <PenTool size={18} />
@@ -299,7 +299,7 @@ export const Whiteboard: React.FC<WhiteboardProps> = ({ onClose, title = "Scratc
       {!isMinimized && (
         <div className="p-4 space-y-4">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex bg-slate-100 p-1 rounded-xl">
+            <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-xl">
               <ToolButton active={tool === 'select'} onClick={() => setTool('select')} icon={<MousePointer2 size={18} />} />
               <ToolButton active={tool === 'pencil'} onClick={() => setTool('pencil')} icon={<Pencil size={18} />} />
               <ToolButton active={tool === 'eraser'} onClick={() => setTool('eraser')} icon={<Eraser size={18} />} />
@@ -310,12 +310,12 @@ export const Whiteboard: React.FC<WhiteboardProps> = ({ onClose, title = "Scratc
               <ToolButton active={tool === 'arrow'} onClick={() => setTool('arrow')} icon={<ArrowRight size={18} />} />
             </div>
 
-            <div className="flex items-center gap-2 px-2 border-l border-slate-200">
-               {['#4f46e5', '#ef4444', '#10b981', '#f59e0b', '#000000'].map(c => (
+            <div className="flex items-center gap-2 px-2 border-l border-slate-200 dark:border-slate-700">
+               {['#4f46e5', '#ef4444', '#10b981', '#f59e0b', '#000000', '#ffffff'].map(c => (
                  <button
                    key={c}
                    onClick={() => setColor(c)}
-                   className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 ${color === c ? 'border-slate-400 scale-125' : 'border-transparent'}`}
+                   className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 ${color === c ? 'border-slate-400 dark:border-slate-500 scale-125' : 'border-transparent'} ${c === '#ffffff' ? 'border-slate-200 dark:border-slate-700' : ''}`}
                    style={{ backgroundColor: c }}
                  />
                ))}
@@ -323,15 +323,15 @@ export const Whiteboard: React.FC<WhiteboardProps> = ({ onClose, title = "Scratc
 
             <div className="flex ml-auto gap-2">
               <ToolButton onClick={undo} icon={<Undo size={18} />} disabled={history.length === 0} />
-              <ToolButton onClick={deleteSelected} icon={<X size={18} />} className="text-amber-600 hover:bg-amber-50" />
-              <ToolButton onClick={clearCanvas} icon={<Trash2 size={18} />} className="text-rose-500 hover:bg-rose-50" />
+              <ToolButton onClick={deleteSelected} icon={<X size={18} />} className="text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/10" />
+              <ToolButton onClick={clearCanvas} icon={<Trash2 size={18} />} className="text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/10" />
               <ToolButton onClick={downloadCanvas} icon={<Download size={18} />} />
             </div>
           </div>
 
-          <div ref={containerRef} className="border-2 border-slate-100 rounded-2xl overflow-hidden bg-slate-50 relative">
+          <div ref={containerRef} className="border-2 border-slate-100 dark:border-slate-700 rounded-2xl overflow-hidden bg-slate-50 dark:bg-slate-900 relative">
             <canvas ref={canvasRef} />
-            <div className="absolute top-2 right-2 px-2 py-1 bg-white/80 backdrop-blur-sm rounded-lg text-[10px] font-bold text-slate-400 pointer-events-none">
+            <div className="absolute top-2 right-2 px-2 py-1 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg text-[10px] font-bold text-slate-400 dark:text-slate-500 pointer-events-none">
                 CANVAS READY
             </div>
           </div>
@@ -351,7 +351,7 @@ const ToolButton: React.FC<{
   <button
     onClick={onClick}
     disabled={disabled}
-    className={`p-2.5 rounded-lg transition-all ${active ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:bg-white/50'} ${disabled ? 'opacity-30 cursor-not-allowed' : ''} ${className}`}
+    className={`p-2.5 rounded-lg transition-all ${active ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50'} ${disabled ? 'opacity-30 cursor-not-allowed' : ''} ${className}`}
   >
     {icon}
   </button>

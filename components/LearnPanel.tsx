@@ -227,17 +227,17 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
 
   if (viewMode === 'list') {
     return (
-      <div className="space-y-12 py-10 px-4 max-w-5xl mx-auto pb-40">
+      <div className="space-y-12 py-10 px-4 max-w-5xl mx-auto pb-40 transition-colors">
         <header className="text-center space-y-6 max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-6 py-2 bg-indigo-50 border border-indigo-100 rounded-full text-indigo-600 font-black text-sm uppercase tracking-widest">
+          <div className="inline-flex items-center gap-2 px-6 py-2 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 rounded-full text-indigo-600 dark:text-indigo-400 font-black text-sm uppercase tracking-widest">
             <GraduationCap size={16} />
             Study Hall
           </div>
-          <h2 className="text-5xl font-black text-slate-900 tracking-tight">Interactive <span className="text-indigo-600">Learning</span></h2>
-          <p className="text-lg text-slate-500 font-medium">Choose a topic to start a personalized AI-guided lesson. Learn at your own pace with interactive examples and checkpoints.</p>
+          <h2 className="text-5xl font-black text-slate-900 dark:text-white tracking-tight">Interactive <span className="text-indigo-600 dark:text-indigo-400">Learning</span></h2>
+          <p className="text-lg text-slate-500 dark:text-slate-400 font-medium">Choose a topic to start a personalized AI-guided lesson. Learn at your own pace with interactive examples and checkpoints.</p>
         </header>
 
-        <div className="space-y-8 bg-white p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] border border-slate-100 shadow-2xl shadow-indigo-100/30">
+        <div className="space-y-8 bg-white dark:bg-slate-800 p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] border border-slate-100 dark:border-slate-700 shadow-2xl shadow-indigo-100/30 dark:shadow-none">
           <div className="flex flex-col md:flex-row gap-4 items-center">
             <div className="relative flex-grow w-full">
               <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -246,18 +246,18 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search topics (e.g. Equations)..."
-                className="w-full pl-14 pr-4 py-4 md:py-5 bg-slate-50 border-2 border-slate-50 rounded-[1.5rem] md:rounded-[2rem] focus:border-indigo-500 focus:bg-white transition-all font-medium text-sm md:text-base"
+                className="w-full pl-14 pr-4 py-4 md:py-5 bg-slate-50 dark:bg-slate-900 border-2 border-slate-50 dark:border-slate-700 rounded-[1.5rem] md:rounded-[2rem] focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 transition-all font-medium text-sm md:text-base dark:text-white"
               />
             </div>
           </div>
 
-          <div className="p-6 md:p-8 bg-indigo-50 rounded-[2rem] md:rounded-[2.5rem] border border-indigo-100 flex flex-col md:flex-row gap-6 items-center">
+          <div className="p-6 md:p-8 bg-indigo-50 dark:bg-indigo-900/10 rounded-[2rem] md:rounded-[2.5rem] border border-indigo-100 dark:border-indigo-900/30 flex flex-col md:flex-row gap-6 items-center">
             <div className="shrink-0 w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center">
               <Sparkles size={24} />
             </div>
             <div className="flex-grow text-center md:text-left">
-              <h4 className="text-base md:text-lg font-black text-indigo-900 mb-1 uppercase tracking-tight">Something else?</h4>
-              <p className="text-xs md:text-sm text-indigo-600/70 font-medium italic">I'll create a custom lesson for any math topic.</p>
+              <h4 className="text-base md:text-lg font-black text-indigo-900 dark:text-indigo-100 mb-1 uppercase tracking-tight">Something else?</h4>
+              <p className="text-xs md:text-sm text-indigo-600/70 dark:text-indigo-400/70 font-medium italic">I'll create a custom lesson for any math topic.</p>
             </div>
             <div className="flex flex-col sm:flex-row w-full md:w-auto gap-2">
               <input
@@ -265,12 +265,12 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
                 value={customTopic}
                 onChange={(e) => setCustomTopic(e.target.value)}
                 placeholder="e.g. History of Zero..."
-                className="flex-grow px-6 py-3 md:py-4 bg-white border-2 border-indigo-200 rounded-2xl focus:border-indigo-600 transition-all font-bold text-slate-900 text-sm md:text-base"
+                className="flex-grow px-6 py-3 md:py-4 bg-white dark:bg-slate-900 border-2 border-indigo-200 dark:border-indigo-900/50 rounded-2xl focus:border-indigo-600 transition-all font-bold text-slate-900 dark:text-white text-sm md:text-base"
               />
               <button
                 onClick={() => startLesson(customTopic)}
                 disabled={!customTopic.trim()}
-                className="px-6 py-3 md:py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-200 hover:bg-indigo-700 disabled:opacity-50 disabled:bg-slate-400 text-sm md:text-base whitespace-nowrap"
+                className="px-6 py-3 md:py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-200 dark:shadow-none hover:bg-indigo-700 disabled:opacity-50 disabled:bg-slate-400 text-sm md:text-base whitespace-nowrap"
               >
                 Go
               </button>
@@ -279,14 +279,14 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
 
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
-              <span className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest shrink-0">Level</span>
+              <span className="text-[10px] md:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest shrink-0">Level</span>
               <div className="flex flex-nowrap gap-2">
                 {levels.map(level => (
                   <button
                     key={level}
                     onClick={() => setSelectedLevel(level)}
                     className={`px-4 md:px-6 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-bold transition-all whitespace-nowrap ${
-                      selectedLevel === level ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                      selectedLevel === level ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
                     }`}
                   >
                     {level}
@@ -305,15 +305,15 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
                   onClick={() => startLesson(t.name)}
-                  className="group p-8 bg-white border border-slate-100 rounded-[2.5rem] text-left hover:border-indigo-600 hover:shadow-2xl hover:shadow-indigo-100 transition-all transform hover:-translate-y-2 relative overflow-hidden"
+                  className="group p-8 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[2.5rem] text-left hover:border-indigo-600 dark:hover:border-indigo-400 hover:shadow-2xl hover:shadow-indigo-100 dark:hover:shadow-none transition-all transform hover:-translate-y-2 relative overflow-hidden"
                 >
-                  <div className="absolute top-0 left-0 w-2 h-full bg-slate-100 group-hover:bg-indigo-600 transition-colors"></div>
+                  <div className="absolute top-0 left-0 w-2 h-full bg-slate-100 dark:bg-slate-700 group-hover:bg-indigo-600 dark:group-hover:bg-indigo-500 transition-colors"></div>
                   <div className="flex justify-between items-start mb-6">
-                    <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-widest">{t.level}</span>
-                    <ChevronRight className="text-slate-200 group-hover:text-indigo-600" size={20} />
+                    <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 rounded-lg text-[10px] font-black uppercase tracking-widest">{t.level}</span>
+                    <ChevronRight className="text-slate-200 dark:text-slate-700 group-hover:text-indigo-600 dark:group-hover:text-indigo-400" size={20} />
                   </div>
-                  <h4 className="text-xl font-black text-slate-900 mb-3 group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{t.name}</h4>
-                  <p className="text-sm text-slate-500 leading-relaxed font-medium">{t.description}</p>
+                  <h4 className="text-xl font-black text-slate-900 dark:text-white mb-3 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors uppercase tracking-tight">{t.name}</h4>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed font-medium">{t.description}</p>
                 </motion.button>
               ))}
             </AnimatePresence>
@@ -327,10 +327,10 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
     const staticData = topic ? PRACTICE_TOPICS.find(t => t.name === topic) : null;
     
     return (
-      <div className="max-w-5xl mx-auto py-12 px-4 space-y-12">
+      <div className="max-w-5xl mx-auto py-12 px-4 space-y-12 transition-colors">
         <button 
           onClick={handleBackToTopics}
-          className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold mb-8 transition-colors"
+          className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 font-bold mb-8 transition-colors"
         >
           <ArrowLeft size={18} />
           Back to Library
@@ -343,34 +343,34 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
         >
           <div className="md:col-span-2 space-y-8">
             <div className="space-y-4">
-               <h1 className="text-6xl font-black text-slate-900 tracking-tight leading-none uppercase">{topic}</h1>
+               <h1 className="text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-none uppercase">{topic}</h1>
                <div className="flex gap-3">
-                 <span className="px-4 py-1.5 bg-indigo-600 text-white rounded-full text-xs font-black uppercase tracking-widest">Level {lessonLevel} Module</span>
-                 <span className="px-4 py-1.5 bg-slate-100 text-slate-500 rounded-full text-xs font-black uppercase tracking-widest">{staticData?.level || 'Academic'} Mastery</span>
+                 <span className="px-4 py-1.5 bg-indigo-600 dark:bg-indigo-500 text-white rounded-full text-xs font-black uppercase tracking-widest">Level {lessonLevel} Module</span>
+                 <span className="px-4 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-full text-xs font-black uppercase tracking-widest">{staticData?.level || 'Academic'} Mastery</span>
                </div>
             </div>
 
-            <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl space-y-10">
+            <div className="bg-white dark:bg-slate-800 p-10 rounded-[3rem] border border-slate-100 dark:border-slate-700 shadow-xl dark:shadow-none space-y-10">
               <div className="space-y-4">
-                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Topic Overview</h3>
-                <p className="text-xl text-slate-600 leading-relaxed font-medium">
+                <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Topic Overview</h3>
+                <p className="text-xl text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
                   {staticData?.description || "Dive deep into the fascinating details of this mathematical concept. Our AI tutor will guide you through theory and application."}
                 </p>
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">What you'll learn</h3>
+                <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">What you'll learn</h3>
                 {outlineLoading ? (
-                  <div className="flex items-center gap-3 text-indigo-600 font-bold">
+                  <div className="flex items-center gap-3 text-indigo-600 dark:text-indigo-400 font-bold">
                     <Loader2 size={20} className="animate-spin" />
                     Generating your curriculum...
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {(topicOutline.length > 0 ? topicOutline : ["Advanced Concepts", "Practical Logic", "Complex Systems", "Real-world Proofs"]).map((item, i) => (
-                      <div key={i} className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                        <div className="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-[10px] font-bold">{i + 1}</div>
-                        <span className="font-bold text-slate-700">{item}</span>
+                      <div key={i} className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-700">
+                        <div className="w-6 h-6 bg-indigo-600 dark:bg-indigo-500 rounded-lg flex items-center justify-center text-white text-[10px] font-bold">{i + 1}</div>
+                        <span className="font-bold text-slate-700 dark:text-slate-300">{item}</span>
                       </div>
                     ))}
                   </div>
@@ -380,12 +380,12 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
           </div>
 
           <div className="space-y-6">
-             <div className="bg-slate-900 p-8 rounded-[3rem] text-white space-y-8 shadow-2xl relative overflow-hidden">
+             <div className="bg-slate-900 dark:bg-indigo-900/40 p-8 rounded-[3rem] text-white border-2 border-slate-900 dark:border-indigo-500/30 space-y-8 shadow-2xl dark:shadow-none relative overflow-hidden transition-colors">
                <div className="absolute top-0 right-0 p-8 opacity-10">
                  <GraduationCap size={120} />
                </div>
                <div className="space-y-2 relative z-10">
-                 <div className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-4">Academic Module</div>
+                 <div className="text-[10px] font-black text-indigo-400 dark:text-indigo-300 uppercase tracking-[0.2em] mb-4">Academic Module</div>
                  <div className="flex items-center gap-2 mb-2">
                    <BookOpen size={16} className="text-indigo-400" />
                    <span className="font-bold text-sm">Adaptive Study Sections</span>
@@ -399,21 +399,21 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
                <button 
                  onClick={beginActualLearning}
                  disabled={loading}
-                 className="w-full py-5 bg-white text-slate-900 rounded-2xl font-black text-lg hover:bg-slate-50 transition-all active:scale-95 shadow-xl shadow-white/5 relative z-10 flex items-center justify-center gap-3"
+                 className="w-full py-5 bg-white dark:bg-indigo-500 text-slate-900 dark:text-white rounded-2xl font-black text-lg hover:bg-slate-50 dark:hover:bg-indigo-600 transition-all active:scale-95 shadow-xl shadow-white/5 relative z-10 flex items-center justify-center gap-3"
                >
                  {loading ? <Loader2 className="animate-spin" /> : 'START LESSON'}
                </button>
 
                <div className="text-center relative z-10">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Est. Time: {staticData?.time || (staticData?.level === 'University' || staticData?.level === 'Advanced' ? '30-40 mins' : '15-20 mins')}</span>
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-indigo-300 uppercase tracking-widest">Est. Time: {staticData?.time || (staticData?.level === 'University' || staticData?.level === 'Advanced' ? '30-40 mins' : '15-20 mins')}</span>
                </div>
              </div>
 
-             <div className="p-6 bg-indigo-50 border border-indigo-100 rounded-[2rem] flex items-center gap-4">
-                <div className="p-3 bg-white rounded-xl text-indigo-600">
+             <div className="p-6 bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30 rounded-[2rem] flex items-center gap-4">
+                <div className="p-3 bg-white dark:bg-slate-800 rounded-xl text-indigo-600 dark:text-indigo-400">
                   <Sparkles size={24} />
                 </div>
-                <div className="text-[10px] font-bold text-indigo-900 uppercase leading-snug">
+                <div className="text-[10px] font-bold text-indigo-900 dark:text-indigo-300 uppercase leading-snug">
                   AI-Powered Dynamic Curriculum: Tailored to your pace and questions.
                 </div>
              </div>
@@ -427,17 +427,17 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
     if (!svg) return null;
     return (
       <div 
-        className="my-8 p-6 bg-white rounded-[2rem] border border-slate-100 flex justify-center overflow-auto shadow-sm"
+        className="my-8 p-6 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 flex justify-center overflow-auto shadow-sm"
         dangerouslySetInnerHTML={{ __html: svg }}
       />
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
+    <div className="max-w-4xl mx-auto py-8 px-4 transition-colors">
       <button 
         onClick={handleBackToTopics}
-        className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold mb-8 transition-colors"
+        className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 font-bold mb-8 transition-colors"
       >
         <ArrowLeft size={18} />
         Back to Topics
@@ -449,17 +449,17 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              className="text-indigo-600"
+              className="text-indigo-600 dark:text-indigo-400"
             >
               <Sparkles size={64} />
             </motion.div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <GraduationCap size={24} className="text-indigo-400" />
+              <GraduationCap size={24} className="text-indigo-400 dark:text-indigo-300" />
             </div>
           </div>
           <div className="text-center">
-            <h3 className="text-2xl font-black text-slate-900 mb-2">Brewing some math magic...</h3>
-            <p className="text-slate-500 font-medium italic">"Making numbers simple, one step at a time!"</p>
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Brewing some math magic...</h3>
+            <p className="text-slate-500 dark:text-slate-400 font-medium italic">"Making numbers simple, one step at a time!"</p>
           </div>
         </div>
       ) : lesson && (
@@ -473,21 +473,21 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="bg-white rounded-[3rem] p-8 md:p-12 border border-slate-100 shadow-2xl shadow-indigo-100/50"
+                  className="bg-white dark:bg-slate-800 rounded-[3rem] p-8 md:p-12 border border-slate-100 dark:border-slate-700 shadow-2xl shadow-indigo-100/50 dark:shadow-none"
                 >
                   <div className="flex items-center justify-between gap-3 mb-8">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center font-black">
+                      <div className="w-10 h-10 bg-indigo-600 dark:bg-indigo-500 text-white rounded-xl flex items-center justify-center font-black">
                         {currentSectionIndex + 1}
                       </div>
-                      <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">
+                      <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
                         {lesson.sections[currentSectionIndex].title}
                       </h3>
                     </div>
                     <TTSButton text={`${lesson.sections[currentSectionIndex].title}. ${lesson.sections[currentSectionIndex].content}`} />
                   </div>
 
-                  <div className="prose prose-slate max-w-none prose-p:text-slate-700 prose-p:leading-relaxed prose-headings:font-black prose-strong:text-indigo-600">
+                  <div className="prose prose-slate dark:prose-invert max-w-none prose-p:text-slate-700 dark:prose-p:text-slate-300 prose-p:leading-relaxed prose-headings:font-black prose-strong:text-indigo-600 dark:prose-strong:text-indigo-400">
                     <ReactMarkdown
                       remarkPlugins={[remarkMath]}
                       rehypePlugins={[rehypeKatex]}
@@ -498,18 +498,18 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
 
                   <Diagram svg={lesson.sections[currentSectionIndex].diagramSvg} />
 
-                  <div className="mt-12 pt-8 border-t border-slate-100 flex justify-between items-center">
+                  <div className="mt-12 pt-8 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center">
                     <button
                       onClick={prevSection}
                       disabled={currentSectionIndex === 0}
-                      className="flex items-center gap-2 px-6 py-4 text-slate-500 hover:text-indigo-600 font-bold disabled:opacity-30 disabled:pointer-events-none"
+                      className="flex items-center gap-2 px-6 py-4 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 font-bold disabled:opacity-30 disabled:pointer-events-none"
                     >
                       <ChevronLeft size={20} />
                       Previous
                     </button>
                     <button
                       onClick={nextSection}
-                      className="flex items-center gap-2 px-8 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all hover:translate-x-1"
+                      className="flex items-center gap-2 px-8 py-4 bg-indigo-600 dark:bg-indigo-500 text-white rounded-2xl font-black shadow-xl shadow-indigo-200 dark:shadow-none hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all hover:translate-x-1"
                     >
                       {currentSectionIndex === lesson.sections.length - 1 ? 'Go to Checkpoint' : 'Continue Lesson'}
                       <ChevronRight size={20} />
@@ -521,20 +521,20 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
                   key={`checkpoint-${currentCheckpointIndex}`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-indigo-600 rounded-[3rem] p-8 md:p-12 text-white shadow-2xl shadow-indigo-200 relative overflow-hidden"
+                  className="bg-indigo-600 dark:bg-slate-800 rounded-[3rem] p-8 md:p-12 text-white border-4 border-indigo-600 dark:border-indigo-500 placeholder:shadow-2xl shadow-indigo-200 dark:shadow-none relative overflow-hidden transition-colors"
                 >
-                   <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+                   <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 dark:bg-indigo-600/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
                    
                    <div className="relative z-10 space-y-6 md:space-y-8">
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
-                          <CheckCircle2 size={32} className="text-indigo-200" />
+                          <CheckCircle2 size={32} className="text-indigo-200 dark:text-indigo-400" />
                           <h3 className="text-xl md:text-2xl font-black uppercase tracking-tight">Checkpoint {currentCheckpointIndex + 1}</h3>
                         </div>
                         <TTSButton text={lesson.checkpoints[currentCheckpointIndex].question} className="bg-white/10 text-white hover:bg-white/20 self-end md:self-auto" />
                       </div>
 
-                      <div className="p-6 md:p-8 bg-white/10 backdrop-blur-md rounded-[2rem] border border-white/20">
+                      <div className="p-6 md:p-8 bg-white/10 dark:bg-indigo-900/20 backdrop-blur-md rounded-[2rem] border border-white/20 dark:border-indigo-500/30">
                         <div className="text-lg md:text-xl font-medium leading-relaxed prose prose-invert max-w-none">
                           <ReactMarkdown
                             remarkPlugins={[remarkMath]}
@@ -552,7 +552,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
                               value={userAnswer}
                               onChange={setUserAnswer}
                               placeholder="Your answer..."
-                              className="w-full bg-white text-slate-900 border-2 border-white/20 rounded-[1.5rem] md:rounded-[2rem] focus-within:border-white transition-all"
+                              className="w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-2 border-white/20 dark:border-slate-700 rounded-[1.5rem] md:rounded-[2rem] focus-within:border-white dark:focus-within:border-indigo-500 transition-all"
                               onEnter={handleCheckpointSubmit}
                               paddingRight="40px"
                             />
@@ -560,7 +560,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
                           <button
                             onClick={handleCheckpointSubmit}
                             disabled={!userAnswer.trim() || isEvaluating}
-                            className="w-full py-4 md:py-5 bg-white text-indigo-600 font-black text-lg md:text-xl rounded-[1.5rem] md:rounded-[2rem] hover:bg-indigo-50 transition-all shadow-xl flex items-center justify-center gap-3"
+                            className="w-full py-4 md:py-5 bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white font-black text-lg md:text-xl rounded-[1.5rem] md:rounded-[2rem] hover:bg-indigo-50 dark:hover:bg-indigo-700 transition-all shadow-xl dark:shadow-none flex items-center justify-center gap-3"
                           >
                             {isEvaluating ? (
                               <>
@@ -603,7 +603,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
 
                           <button
                             onClick={checkpointFeedback.isCorrect ? nextCheckpoint : () => setCheckpointFeedback(null)}
-                            className="w-full py-4 bg-white text-slate-800 font-black rounded-2xl hover:bg-slate-50 transition-all shadow-lg"
+                            className="w-full py-4 bg-white dark:bg-slate-900 text-slate-800 dark:text-white font-black rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-lg"
                           >
                             {checkpointFeedback.isCorrect ? (currentCheckpointIndex === lesson.checkpoints.length - 1 ? 'Complete Lesson' : 'Next Checkpoint') : 'Try Again'}
                           </button>
@@ -613,14 +613,14 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
                       <div className="flex justify-between items-center mt-4">
                         <button 
                           onClick={prevCheckpoint}
-                          className="flex items-center gap-2 text-indigo-200 hover:text-white transition-colors text-sm font-bold"
+                          className="flex items-center gap-2 text-indigo-200 dark:text-indigo-400 hover:text-white dark:hover:text-white transition-colors text-sm font-bold"
                         >
                           <ChevronLeft size={16} />
                           Back
                         </button>
                         <button 
                           onClick={() => setShowCheckpoint(false)}
-                          className="flex items-center gap-2 text-indigo-200 hover:text-white transition-colors text-sm font-bold"
+                          className="flex items-center gap-2 text-indigo-200 dark:text-indigo-400 hover:text-white dark:hover:text-white transition-colors text-sm font-bold"
                         >
                           <RefreshCcw size={16} />
                           Review Lesson Content
@@ -635,7 +635,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
           {/* AI Tutor Sidebar */}
           <div className="lg:col-span-1">
             <div className="sticky top-8 space-y-6">
-              <div className="bg-slate-900 rounded-[2.5rem] p-6 text-white shadow-2xl relative overflow-hidden group">
+              <div className="bg-slate-900 rounded-[2.5rem] p-6 text-white shadow-2xl dark:shadow-none relative overflow-hidden group border border-white/5">
                 <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-indigo-600/20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-1000"></div>
                 
                 <div className="relative z-10 flex flex-col h-[500px]">
@@ -708,13 +708,13 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
                 </div>
               </div>
 
-              <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-[2rem] flex items-center gap-4">
+              <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 p-6 rounded-[2rem] flex items-center gap-4 transition-colors">
                 <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white shrink-0">
                   <CheckCircle2 size={24} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-black text-emerald-900 uppercase tracking-widest">Progress</h4>
-                  <p className="text-lg font-black text-emerald-600">
+                  <h4 className="text-xs font-black text-emerald-900 dark:text-emerald-100 uppercase tracking-widest">Progress</h4>
+                  <p className="text-lg font-black text-emerald-600 dark:text-emerald-400">
                     {Math.round(((currentSectionIndex + (showCheckpoint ? 1 : 0)) / (lesson.sections.length + 1)) * 100)}%
                   </p>
                 </div>
