@@ -2,9 +2,16 @@
 export interface MathTopic {
   name: string;
   category: string;
-  level: string; // e.g., Middle School, High School, University, GCSE, A-Level
+  level: string;
   description: string;
+  time?: string;
 }
+
+/**
+ * @deprecated Use PRACTICE_TOPICS as source of truth.
+ * This is kept for backward compatibility but is empty.
+ */
+export const TOPIC_DATA: Record<string, { description: string, level: string, time: string }> = {};
 
 export const PRACTICE_TOPICS: MathTopic[] = [
   // --- FOUNDATION & ARITHMETIC ---
@@ -456,5 +463,3 @@ export const PRACTICE_TOPICS: MathTopic[] = [
   { name: "Chaos: The Logistic Map", category: "Analysis", level: "University", description: "Bifurcation and population models" },
   { name: "Graph Theory: Dijkstra's Algorithm", category: "Computing", level: "University", description: "Finding the shortest path in weights" }
 ];
-
-

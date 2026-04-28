@@ -24,7 +24,10 @@ export const UserStatus: React.FC = () => {
   const progress = (profile.xp % (profile.level * 100)) / (profile.level);
 
   return (
-    <div className="flex items-center gap-4 bg-white/50 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 shadow-sm transition-all hover:shadow-md">
+    <div 
+      onClick={() => window.dispatchEvent(new Event('navigate_profile'))}
+      className="flex items-center gap-4 bg-white/50 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 shadow-sm transition-all hover:shadow-md cursor-pointer active:scale-95 active:shadow-inner"
+    >
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-1.5">
            <Star size={12} className="text-amber-400 fill-amber-400" />

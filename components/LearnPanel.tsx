@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { PRACTICE_TOPICS } from '../constants';
+import { PRACTICE_TOPICS, TOPIC_DATA } from '../constants';
 import { Lesson, LessonSection, LessonQuestion, QuizFeedback } from '../types';
-import { generateLesson, askLessonClarification, evaluateLessonAnswer } from '../geminiService';
+import { generateLesson, askLessonClarification, evaluateLessonAnswer, generateTopicOutline } from '../geminiService';
 import { 
   ArrowLeft, Search, GraduationCap, ChevronRight, ChevronLeft, 
   MessageCircle, Send, Loader2, BookOpen, CheckCircle2, AlertCircle, 
@@ -10,7 +10,8 @@ import {
 import { TTSButton } from './TTSButton';
 import { Whiteboard } from './Whiteboard';
 import { CelebrationOverlay } from './CelebrationOverlay';
-import { addXP } from '../userService';
+import { addXP, updateGenericStats, addMastery } from '../userService';
+import { checkAchievements } from '../achievementService';
 import { saveToHistory } from '../historyService';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
@@ -42,8 +43,8 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
 
-  const levels = useMemo<string[]>(() => ['All', ...Array.from(new Set(PRACTICE_TOPICS.map(t => t.level)))], []);
-  const categories = useMemo<string[]>(() => ['All', ...Array.from(new Set(PRACTICE_TOPICS.map(t => t.category)))], []);
+  const levels = useMemo<string[]>(() => ['All', ...Array.from(new Set(PRACTICE_TOPICS.map(t => t.level as string)))], []);
+  const categories = useMemo<string[]>(() => ['All', ...Array.from(new Set(PRACTICE_TOPICS.map(t => t.category as string)))], []);
 
   const filteredTopics = useMemo(() => {
     return PRACTICE_TOPICS.filter(t => {
@@ -57,23 +58,64 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
 
   const [isFinished, setIsFinished] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'detail' | 'learning'>('list');
+  const [lessonLevel, setLessonLevel] = useState(1);
+  const [topicOutline, setTopicOutline] = useState<string[]>([]);
+  const [outlineLoading, setOutlineLoading] = useState(false);
 
-  const startLesson = async (selectedTopic: string) => {
+  useEffect(() => {
+    const handleRemoteLesson = (e: any) => {
+      startLesson(e.detail);
+    };
+    window.addEventListener('learn_topic', handleRemoteLesson);
+    return () => window.removeEventListener('learn_topic', handleRemoteLesson);
+  }, []);
+
+  const startLesson = async (selectedTopic: string, level: number = 1, skipDetail: boolean = false) => {
     setTopic(selectedTopic);
     setLesson(null);
-    setViewMode('detail');
+    setLessonLevel(level);
+    setViewMode(skipDetail ? 'learning' : 'detail');
     setCurrentSectionIndex(0);
+    setCurrentCheckpointIndex(0);
+    setUserAnswer('');
+    setCheckpointFeedback(null);
+    setShowCheckpoint(false);
     setChatHistory([]);
+    setTopicOutline([]);
+    
+    if (!skipDetail) {
+      setOutlineLoading(true);
+      generateTopicOutline(selectedTopic, level).then(outline => {
+        setTopicOutline(outline);
+        setOutlineLoading(false);
+      });
+    } else {
+      setLoading(true);
+      try {
+        const l = await generateLesson(selectedTopic, level);
+        setLesson(l);
+        saveToHistory('lesson', selectedTopic, l);
+      } catch (err) {
+        console.error(err);
+        alert("Failed to load lesson. Please try again.");
+        setViewMode('list');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const beginActualLearning = async () => {
+    if (!topic) return;
     setLoading(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setViewMode('learning');
     try {
-      const l = await generateLesson(selectedTopic);
+      const l = await generateLesson(topic, lessonLevel);
       setLesson(l);
-      saveToHistory('lesson', selectedTopic, l);
+      saveToHistory('lesson', topic, l);
     } catch (err) {
       console.error(err);
       alert("Failed to load lesson. Please try again.");
-      setTopic(null);
       setViewMode('list');
     } finally {
       setLoading(false);
@@ -86,8 +128,10 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
     setViewMode('list');
     setChatHistory([]);
     setCurrentSectionIndex(0);
+    setCurrentCheckpointIndex(0);
     setShowCheckpoint(false);
     setIsFinished(false);
+    setLessonLevel(1);
   };
   const handleAskTutor = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,7 +201,11 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
       setCheckpointFeedback(null);
     } else {
       // Completed all checkpoints
-      addXP(150); // Comprehensive lesson bonus
+      const xpAmount = 150 * lessonLevel;
+      addXP(xpAmount); // Comprehensive lesson bonus
+      if (topic) addMastery(topic);
+      updateGenericStats({ totalTimeMinutes: 20 });
+      checkAchievements();
       window.dispatchEvent(new Event('xp_updated'));
       setIsFinished(true);
     }
@@ -276,6 +324,8 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
   }
 
   if (viewMode === 'detail') {
+    const staticData = topic ? PRACTICE_TOPICS.find(t => t.name === topic) : null;
+    
     return (
       <div className="max-w-5xl mx-auto py-12 px-4 space-y-12">
         <button 
@@ -286,90 +336,89 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
           Back to Library
         </button>
 
-        {loading ? (
-           <div className="flex flex-col items-center justify-center py-40 space-y-6">
-             <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} className="text-indigo-600">
-               <Loader2 size={64} />
-             </motion.div>
-             <h3 className="text-2xl font-black text-slate-900">Gathering Intelligence...</h3>
-           </div>
-        ) : lesson && (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-12"
-          >
-            <div className="md:col-span-2 space-y-8">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-12"
+        >
+          <div className="md:col-span-2 space-y-8">
+            <div className="space-y-4">
+               <h1 className="text-6xl font-black text-slate-900 tracking-tight leading-none uppercase">{topic}</h1>
+               <div className="flex gap-3">
+                 <span className="px-4 py-1.5 bg-indigo-600 text-white rounded-full text-xs font-black uppercase tracking-widest">Level {lessonLevel} Module</span>
+                 <span className="px-4 py-1.5 bg-slate-100 text-slate-500 rounded-full text-xs font-black uppercase tracking-widest">{staticData?.level || 'Academic'} Mastery</span>
+               </div>
+            </div>
+
+            <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl space-y-10">
               <div className="space-y-4">
-                 <h1 className="text-6xl font-black text-slate-900 tracking-tight leading-none uppercase">{lesson.topic}</h1>
-                 <div className="flex gap-3">
-                   <span className="px-4 py-1.5 bg-indigo-600 text-white rounded-full text-xs font-black uppercase tracking-widest">Featured Lesson</span>
-                   <span className="px-4 py-1.5 bg-slate-100 text-slate-500 rounded-full text-xs font-black uppercase tracking-widest">Mastery Required</span>
-                 </div>
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Topic Overview</h3>
+                <p className="text-xl text-slate-600 leading-relaxed font-medium">
+                  {staticData?.description || "Dive deep into the fascinating details of this mathematical concept. Our AI tutor will guide you through theory and application."}
+                </p>
               </div>
 
-              <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl space-y-10">
-                <div className="space-y-4">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Topic Overview</h3>
-                  <p className="text-xl text-slate-600 leading-relaxed font-medium">{lesson.description || "Dive deep into the fascinating details of this mathematical concept. Our AI tutor will guide you through theory and application."}</p>
-                </div>
-
-                {lesson.outline && (
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">What you'll learn</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {lesson.outline.map((item, i) => (
-                        <div key={i} className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                          <div className="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-[10px] font-bold">{i + 1}</div>
-                          <span className="font-bold text-slate-700">{item}</span>
-                        </div>
-                      ))}
-                    </div>
+              <div className="space-y-4">
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">What you'll learn</h3>
+                {outlineLoading ? (
+                  <div className="flex items-center gap-3 text-indigo-600 font-bold">
+                    <Loader2 size={20} className="animate-spin" />
+                    Generating your curriculum...
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {(topicOutline.length > 0 ? topicOutline : ["Advanced Concepts", "Practical Logic", "Complex Systems", "Real-world Proofs"]).map((item, i) => (
+                      <div key={i} className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <div className="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-[10px] font-bold">{i + 1}</div>
+                        <span className="font-bold text-slate-700">{item}</span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
             </div>
+          </div>
 
-            <div className="space-y-6">
-               <div className="bg-slate-900 p-8 rounded-[3rem] text-white space-y-8 shadow-2xl relative overflow-hidden">
-                 <div className="absolute top-0 right-0 p-8 opacity-10">
-                   <GraduationCap size={120} />
+          <div className="space-y-6">
+             <div className="bg-slate-900 p-8 rounded-[3rem] text-white space-y-8 shadow-2xl relative overflow-hidden">
+               <div className="absolute top-0 right-0 p-8 opacity-10">
+                 <GraduationCap size={120} />
+               </div>
+               <div className="space-y-2 relative z-10">
+                 <div className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-4">Academic Module</div>
+                 <div className="flex items-center gap-2 mb-2">
+                   <BookOpen size={16} className="text-indigo-400" />
+                   <span className="font-bold text-sm">Adaptive Study Sections</span>
                  </div>
-                 <div className="space-y-2 relative z-10">
-                   <div className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-4">Academic Module</div>
-                   <div className="flex items-center gap-2 mb-2">
-                     <BookOpen size={16} className="text-indigo-400" />
-                     <span className="font-bold text-sm">{lesson.sections.length} Study Sections</span>
-                   </div>
-                   <div className="flex items-center gap-2">
-                     <CheckCircle2 size={16} className="text-emerald-400" />
-                     <span className="font-bold text-sm">{lesson.checkpoints.length} Knowledge Checkpoints</span>
-                   </div>
-                 </div>
-
-                 <button 
-                   onClick={() => setViewMode('learning')}
-                   className="w-full py-5 bg-white text-slate-900 rounded-2xl font-black text-lg hover:bg-slate-50 transition-all active:scale-95 shadow-xl shadow-white/5 relative z-10"
-                 >
-                   START LESSON
-                 </button>
-
-                 <div className="text-center relative z-10">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Est. Time: 15-20 Mins</span>
+                 <div className="flex items-center gap-2">
+                   <CheckCircle2 size={16} className="text-emerald-400" />
+                   <span className="font-bold text-sm">Dynamic Checkpoints</span>
                  </div>
                </div>
 
-               <div className="p-6 bg-indigo-50 border border-indigo-100 rounded-[2rem] flex items-center gap-4">
-                  <div className="p-3 bg-white rounded-xl text-indigo-600">
-                    <Sparkles size={24} />
-                  </div>
-                  <div className="text-[10px] font-bold text-indigo-900 uppercase leading-snug">
-                    AI-Powered Dynamic Curriculum: Tailored to your pace and questions.
-                  </div>
+               <button 
+                 onClick={beginActualLearning}
+                 disabled={loading}
+                 className="w-full py-5 bg-white text-slate-900 rounded-2xl font-black text-lg hover:bg-slate-50 transition-all active:scale-95 shadow-xl shadow-white/5 relative z-10 flex items-center justify-center gap-3"
+               >
+                 {loading ? <Loader2 className="animate-spin" /> : 'START LESSON'}
+               </button>
+
+               <div className="text-center relative z-10">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Est. Time: {staticData?.time || (staticData?.level === 'University' || staticData?.level === 'Advanced' ? '30-40 mins' : '15-20 mins')}</span>
                </div>
-            </div>
-          </motion.div>
-        )}
+             </div>
+
+             <div className="p-6 bg-indigo-50 border border-indigo-100 rounded-[2rem] flex items-center gap-4">
+                <div className="p-3 bg-white rounded-xl text-indigo-600">
+                  <Sparkles size={24} />
+                </div>
+                <div className="text-[10px] font-bold text-indigo-900 uppercase leading-snug">
+                  AI-Powered Dynamic Curriculum: Tailored to your pace and questions.
+                </div>
+             </div>
+          </div>
+        </motion.div>
       </div>
     );
   }
@@ -691,16 +740,13 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
 
       {isFinished && (
         <CelebrationOverlay 
-          xpEarned={150}
-          message={`You mastered the lesson on ${topic}! You've gained 100% completion.`}
+          xpEarned={150 * lessonLevel}
+          message={`Level ${lessonLevel} Mastered! You've successfully completed the current module for ${topic}. Ready for more advanced concepts?`}
           onHome={handleBackToTopics}
           onNext={() => {
+            const nextLevel = lessonLevel + 1;
             setIsFinished(false);
-            setShowCheckpoint(false);
-            setCurrentCheckpointIndex(0);
-            setCurrentSectionIndex(0);
-            // Re-generate or restart
-            if (topic) startLesson(topic);
+            if (topic) startLesson(topic, nextLevel, true);
           }}
         />
       )}

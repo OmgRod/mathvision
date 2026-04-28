@@ -24,7 +24,8 @@ import {
 import { TTSButton } from './TTSButton';
 import { Whiteboard } from './Whiteboard';
 import { CelebrationOverlay } from './CelebrationOverlay';
-import { addXP } from '../userService';
+import { addXP, updateGenericStats, addCompletedTopic } from '../userService';
+import { checkAchievements } from '../achievementService';
 import { saveToHistory } from '../historyService';
 import { generateQuizQuestion, evaluateStep } from '../geminiService';
 import { QuizQuestion, QuizFeedback } from '../types';
@@ -32,7 +33,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import { MathInput } from './MathInput';
-import { PRACTICE_TOPICS, MathTopic } from '../constants';
+import { TOPIC_DATA, PRACTICE_TOPICS, MathTopic } from '../constants';
 
 export const PracticePanel: React.FC<{ initialData?: { topic: string, data: QuizQuestion } }> = ({ initialData }) => {
   const [topic, setTopic] = useState<string | null>(initialData?.topic || null);
@@ -54,8 +55,8 @@ export const PracticePanel: React.FC<{ initialData?: { topic: string, data: Quiz
   const [selectedLevel, setSelectedLevel] = useState<string>('All');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
-  const levels = useMemo<string[]>(() => ['All', ...Array.from(new Set(PRACTICE_TOPICS.map(t => t.level)))], []);
-  const categories = useMemo<string[]>(() => ['All', ...Array.from(new Set(PRACTICE_TOPICS.map(t => t.category)))], []);
+  const levels = useMemo<string[]>(() => ['All', ...Array.from(new Set(PRACTICE_TOPICS.map(t => t.level as string)))], []);
+  const categories = useMemo<string[]>(() => ['All', ...Array.from(new Set(PRACTICE_TOPICS.map(t => t.category as string)))], []);
 
   const filteredTopics = useMemo(() => {
     return PRACTICE_TOPICS.filter(t => {
@@ -107,11 +108,11 @@ export const PracticePanel: React.FC<{ initialData?: { topic: string, data: Quiz
     setLoading(true);
     const expectedStep = question.correctSteps[currentStepIndex];
     try {
-      const result = await evaluateStep(question.question, expectedStep.math, userAnswer);
+      const result = await evaluateStep(question.question, expectedStep.math, userAnswer, question.finalAnswer);
       setFeedback(result);
       
       if (result.isCorrect) {
-        setScore(prev => prev + (currentStepIndex === question.correctSteps.length - 1 ? 10 : 5));
+        setScore(prev => prev + (currentStepIndex === question.correctSteps.length - 1 || result.isFinalAnswer ? 10 : 5));
       }
     } catch (err) {
       console.error(err);
@@ -121,7 +122,7 @@ export const PracticePanel: React.FC<{ initialData?: { topic: string, data: Quiz
   };
 
   const proceedToNext = () => {
-    if (!question) return;
+    if (!question || !feedback) return;
     
     // Store current step and answer in history
     setCompletedSteps(prev => [
@@ -129,15 +130,18 @@ export const PracticePanel: React.FC<{ initialData?: { topic: string, data: Quiz
       { step: question.correctSteps[currentStepIndex], answer: userAnswer }
     ]);
 
-    if (currentStepIndex < (question.correctSteps.length || 0) - 1) {
+    if (feedback.isFinalAnswer || currentStepIndex >= (question.correctSteps.length || 0) - 1) {
+      const xpAmount = score + 50; // Base completion bonus
+      addXP(xpAmount);
+      addCompletedTopic(topic!);
+      updateGenericStats({ totalQuestionsSolved: 1, totalTimeMinutes: 5 });
+      checkAchievements();
+      window.dispatchEvent(new Event('xp_updated'));
+      setIsFinished(true);
+    } else {
       setCurrentStepIndex(prev => prev + 1);
       setUserAnswer('');
       setFeedback(null);
-    } else {
-      const xpAmount = score + 50; // Base completion bonus
-      addXP(xpAmount);
-      window.dispatchEvent(new Event('xp_updated'));
-      setIsFinished(true);
     }
   };
 
@@ -497,7 +501,7 @@ export const PracticePanel: React.FC<{ initialData?: { topic: string, data: Quiz
                             onClick={proceedToNext}
                             className="mt-4 px-6 py-2 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 transition-all"
                           >
-                            Proceed to {currentStepIndex === question.correctSteps.length - 1 ? 'Finish' : 'Next Step'}
+                            Proceed to {(feedback.isFinalAnswer || currentStepIndex === question.correctSteps.length - 1) ? 'Finish' : 'Next Step'}
                           </button>
                         )}
                       </div>

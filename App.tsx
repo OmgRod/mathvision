@@ -7,15 +7,35 @@ import { CameraInput } from './components/CameraInput';
 import { PracticePanel } from './components/PracticePanel';
 import { LearnPanel } from './components/LearnPanel';
 import { HistoryPanel } from './components/HistoryPanel';
+import { ProfilePanel } from './components/ProfilePanel';
+import { Toast } from './components/Toast';
+import { HelpModal } from './components/HelpModal';
 import { ProcessingState, HistoryItem } from './types';
 import { solveMathEquation } from './geminiService';
 import { saveToHistory } from './historyService';
+import { updateGenericStats } from './userService';
+import { checkAchievements } from './achievementService';
 import { Loader2, Trash2, RefreshCw, Camera, AlertCircle, Sparkles, BookOpen, PenTool, Brain, GraduationCap, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const App: React.FC = () => {
-  const [mode, setMode] = useState<'solver' | 'practice' | 'learn' | 'history'>('solver');
+  const [mode, setMode] = useState<'solver' | 'practice' | 'learn' | 'history' | 'profile'>('solver');
   const [image, setImage] = useState<string | null>(null);
+  
+  React.useEffect(() => {
+    const handleXPNavigate = () => setMode('profile');
+    const handleLearnTopic = (e: any) => {
+      setPreLoadedLesson({ topic: e.detail });
+      setMode('learn');
+    };
+    
+    window.addEventListener('navigate_profile', handleXPNavigate);
+    window.addEventListener('learn_topic', handleLearnTopic);
+    return () => {
+      window.removeEventListener('navigate_profile', handleXPNavigate);
+      window.removeEventListener('learn_topic', handleLearnTopic);
+    };
+  }, []);
   const [textInput, setTextInput] = useState('');
   const [mimeType, setMimeType] = useState<string>('');
   const [showCamera, setShowCamera] = useState(false);
@@ -27,6 +47,34 @@ const App: React.FC = () => {
 
   const [preLoadedPractice, setPreLoadedPractice] = useState<{ topic: string, data: any } | null>(null);
   const [preLoadedLesson, setPreLoadedLesson] = useState<any>(null);
+  const [toast, setToast] = useState<{ achievement: any } | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
+
+  React.useEffect(() => {
+    const handleAchievement = (e: any) => {
+      setToast({ achievement: e.detail });
+      setTimeout(() => setToast(null), 5000);
+    };
+    const handleShowHelp = () => setShowHelp(true);
+    
+    window.addEventListener('achievement_unlocked', handleAchievement);
+    window.addEventListener('show_help', handleShowHelp);
+    
+    // Background sync on startup
+    const syncAchievements = () => {
+      console.log('Background Sync: Checking for missed achievements...');
+      checkAchievements();
+    };
+    
+    // Run after a short delay to not affect initial render performance
+    const timer = setTimeout(syncAchievements, 2000);
+    
+    return () => {
+      window.removeEventListener('achievement_unlocked', handleAchievement);
+      window.removeEventListener('show_help', handleShowHelp);
+      clearTimeout(timer);
+    };
+  }, []);
 
   const handleSelectHistoryItem = (item: HistoryItem) => {
     if (item.type === 'solution') {
@@ -65,6 +113,10 @@ const App: React.FC = () => {
         mimeType: mimeType || undefined 
       });
       setState({ isProcessing: false, error: null, result });
+      
+      // Update stats and check achievements
+      updateGenericStats({ totalQuestionsSolved: 1 });
+      checkAchievements();
       
       // Save to history
       saveToHistory('solution', textInput || 'Visual Equation', result);
@@ -416,20 +468,38 @@ const App: React.FC = () => {
               <HistoryPanel onSelectItem={handleSelectHistoryItem} />
             </motion.div>
           )}
+
+          {mode === 'profile' && (
+            <motion.div
+              key="profile"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <ProfilePanel />
+            </motion.div>
+          )}
         </AnimatePresence>
       </main>
 
       <footer className="py-12 border-t border-slate-100 text-center text-slate-400 text-sm">
         <div className="flex justify-center gap-6 mb-6">
-          <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:text-indigo-600 font-medium">Home</button>
-          <button onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-indigo-600 font-medium">Features</button>
-          <button onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-indigo-600 font-medium">How it works</button>
-          <a href="mailto:support@mathvision.ai" className="hover:text-indigo-600 font-medium">Contact</a>
+          <button onClick={() => setMode('solver')} className="hover:text-indigo-600 font-medium">Solver</button>
+          <button onClick={() => setShowHelp(true)} className="hover:text-indigo-600 font-medium">Support & Learn More</button>
         </div>
         <p className="font-medium">Simple solutions for complex problems. &copy; {new Date().getFullYear()} MathVision AI.</p>
       </footer>
 
       <AnimatePresence>
+        {toast && (
+          <Toast 
+            achievement={toast.achievement} 
+            onClose={() => setToast(null)} 
+          />
+        )}
+        {showHelp && (
+          <HelpModal onClose={() => setShowHelp(false)} />
+        )}
         {showCamera && (
           <CameraInput 
             onCapture={handleImageUpload} 

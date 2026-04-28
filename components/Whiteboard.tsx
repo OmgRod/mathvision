@@ -12,7 +12,10 @@ import {
   Minimize2,
   Download,
   X,
-  PenTool
+  PenTool,
+  MousePointer2,
+  Type,
+  ArrowRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -25,9 +28,17 @@ export const Whiteboard: React.FC<WhiteboardProps> = ({ onClose, title = "Scratc
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
-  const [tool, setTool] = useState<'pencil' | 'eraser' | 'rect' | 'circle' | 'line'>('pencil');
+  const [tool, setTool] = useState<'select' | 'pencil' | 'eraser' | 'rect' | 'circle' | 'line' | 'text' | 'arrow'>('pencil');
   const [color, setColor] = useState('#4f46e5');
   const [isMinimized, setIsMinimized] = useState(false);
+  const [history, setHistory] = useState<string[]>([]);
+
+  const saveHistory = () => {
+    if (fabricCanvasRef.current) {
+      const json = JSON.stringify(fabricCanvasRef.current.toJSON());
+      setHistory(prev => [...prev.slice(-19), json]); // Keep last 20 steps
+    }
+  };
 
   useEffect(() => {
     if (!canvasRef.current || !containerRef.current) return;
@@ -40,6 +51,14 @@ export const Whiteboard: React.FC<WhiteboardProps> = ({ onClose, title = "Scratc
     });
 
     fabricCanvasRef.current = canvas;
+    
+    canvas.on('path:created', () => {
+      saveHistory();
+    });
+
+    canvas.on('object:modified', () => {
+      saveHistory();
+    });
     
     // Set initial pen
     canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
@@ -77,13 +96,44 @@ export const Whiteboard: React.FC<WhiteboardProps> = ({ onClose, title = "Scratc
       canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
       canvas.freeDrawingBrush.width = 3;
       canvas.freeDrawingBrush.color = color;
+      canvas.selection = false;
+      canvas.forEachObject(obj => obj.selectable = false);
     } else if (tool === 'eraser') {
       canvas.isDrawingMode = true;
       canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
       canvas.freeDrawingBrush.width = 20;
       canvas.freeDrawingBrush.color = '#ffffff';
+      canvas.selection = false;
+      canvas.forEachObject(obj => obj.selectable = false);
+    } else if (tool === 'select') {
+      canvas.isDrawingMode = false;
+      canvas.selection = true;
+      canvas.forEachObject(obj => obj.selectable = true);
+    } else if (tool === 'text') {
+      canvas.isDrawingMode = false;
+      canvas.selection = false;
+      canvas.forEachObject(obj => obj.selectable = false);
+      
+      canvas.on('mouse:down', (options: any) => {
+        if (!options.pointer || tool !== 'text') return;
+        const text = new fabric.IText('Type here...', {
+          left: options.pointer.x,
+          top: options.pointer.y,
+          fontFamily: 'Inter',
+          fontSize: 20,
+          fill: color,
+        });
+        canvas.add(text);
+        canvas.setActiveObject(text);
+        text.enterEditing();
+        setTool('select'); // Switch to select after adding text
+      });
     } else {
       // Shape tools
+      canvas.isDrawingMode = false;
+      canvas.selection = false;
+      canvas.forEachObject(obj => obj.selectable = false);
+
       let shape: fabric.Object | null = null;
       let startPoint: fabric.Point | null = null;
 
@@ -99,7 +149,8 @@ export const Whiteboard: React.FC<WhiteboardProps> = ({ onClose, title = "Scratc
             height: 0,
             fill: 'transparent',
             stroke: color,
-            strokeWidth: 2,
+            strokeWidth: 3,
+            selectable: false,
           });
         } else if (tool === 'circle') {
           shape = new fabric.Circle({
@@ -108,12 +159,23 @@ export const Whiteboard: React.FC<WhiteboardProps> = ({ onClose, title = "Scratc
             radius: 0,
             fill: 'transparent',
             stroke: color,
-            strokeWidth: 2,
+            strokeWidth: 3,
+            selectable: false,
           });
         } else if (tool === 'line') {
           shape = new fabric.Line([startPoint.x, startPoint.y, startPoint.x, startPoint.y], {
             stroke: color,
-            strokeWidth: 2,
+            strokeWidth: 3,
+            selectable: false,
+          });
+        } else if (tool === 'arrow') {
+          // Arrow is a group of line and triangle
+          shape = new fabric.Line([startPoint.x, startPoint.y, startPoint.x, startPoint.y], {
+            stroke: color,
+            strokeWidth: 3,
+            originX: 'center',
+            originY: 'center',
+            selectable: false,
           });
         }
 
@@ -138,7 +200,7 @@ export const Whiteboard: React.FC<WhiteboardProps> = ({ onClose, title = "Scratc
             left: Math.min(startPoint.x, pointer.x),
             top: Math.min(startPoint.y, pointer.y),
           });
-        } else if (tool === 'line') {
+        } else if (tool === 'line' || tool === 'arrow') {
           (shape as fabric.Line).set({
             x2: pointer.x,
             y2: pointer.y,
@@ -149,6 +211,7 @@ export const Whiteboard: React.FC<WhiteboardProps> = ({ onClose, title = "Scratc
       });
 
       canvas.on('mouse:up', () => {
+        saveHistory();
         shape = null;
         startPoint = null;
       });
@@ -157,9 +220,34 @@ export const Whiteboard: React.FC<WhiteboardProps> = ({ onClose, title = "Scratc
 
   const clearCanvas = () => {
     if (fabricCanvasRef.current) {
+      saveHistory();
       fabricCanvasRef.current.clear();
       fabricCanvasRef.current.backgroundColor = '#ffffff';
       fabricCanvasRef.current.renderAll();
+    }
+  };
+
+  const undo = () => {
+    if (fabricCanvasRef.current && history.length > 0) {
+      const lastState = history[history.length - 1];
+      const newHistory = history.slice(0, -1);
+      setHistory(newHistory);
+      
+      fabricCanvasRef.current.loadFromJSON(JSON.parse(lastState)).then(() => {
+        fabricCanvasRef.current?.renderAll();
+      });
+    }
+  };
+
+  const deleteSelected = () => {
+    if (fabricCanvasRef.current) {
+      const activeObjects = fabricCanvasRef.current.getActiveObjects();
+      if (activeObjects.length > 0) {
+        saveHistory();
+        activeObjects.forEach(obj => fabricCanvasRef.current?.remove(obj));
+        fabricCanvasRef.current.discardActiveObject();
+        fabricCanvasRef.current.renderAll();
+      }
     }
   };
 
@@ -212,11 +300,14 @@ export const Whiteboard: React.FC<WhiteboardProps> = ({ onClose, title = "Scratc
         <div className="p-4 space-y-4">
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex bg-slate-100 p-1 rounded-xl">
+              <ToolButton active={tool === 'select'} onClick={() => setTool('select')} icon={<MousePointer2 size={18} />} />
               <ToolButton active={tool === 'pencil'} onClick={() => setTool('pencil')} icon={<Pencil size={18} />} />
               <ToolButton active={tool === 'eraser'} onClick={() => setTool('eraser')} icon={<Eraser size={18} />} />
+              <ToolButton active={tool === 'text'} onClick={() => setTool('text')} icon={<Type size={18} />} />
               <ToolButton active={tool === 'rect'} onClick={() => setTool('rect')} icon={<Square size={18} />} />
               <ToolButton active={tool === 'circle'} onClick={() => setTool('circle')} icon={<Circle size={18} />} />
               <ToolButton active={tool === 'line'} onClick={() => setTool('line')} icon={<Minus size={18} />} />
+              <ToolButton active={tool === 'arrow'} onClick={() => setTool('arrow')} icon={<ArrowRight size={18} />} />
             </div>
 
             <div className="flex items-center gap-2 px-2 border-l border-slate-200">
@@ -231,6 +322,8 @@ export const Whiteboard: React.FC<WhiteboardProps> = ({ onClose, title = "Scratc
             </div>
 
             <div className="flex ml-auto gap-2">
+              <ToolButton onClick={undo} icon={<Undo size={18} />} disabled={history.length === 0} />
+              <ToolButton onClick={deleteSelected} icon={<X size={18} />} className="text-amber-600 hover:bg-amber-50" />
               <ToolButton onClick={clearCanvas} icon={<Trash2 size={18} />} className="text-rose-500 hover:bg-rose-50" />
               <ToolButton onClick={downloadCanvas} icon={<Download size={18} />} />
             </div>
@@ -253,10 +346,12 @@ const ToolButton: React.FC<{
   onClick: () => void; 
   icon: React.ReactNode;
   className?: string;
-}> = ({ active, onClick, icon, className = "" }) => (
+  disabled?: boolean;
+}> = ({ active, onClick, icon, className = "", disabled }) => (
   <button
     onClick={onClick}
-    className={`p-2.5 rounded-lg transition-all ${active ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:bg-white/50'} ${className}`}
+    disabled={disabled}
+    className={`p-2.5 rounded-lg transition-all ${active ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:bg-white/50'} ${disabled ? 'opacity-30 cursor-not-allowed' : ''} ${className}`}
   >
     {icon}
   </button>

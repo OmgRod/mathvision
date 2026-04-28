@@ -1,5 +1,6 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import 'mathlive';
+import { Keyboard, Type, Sigma } from 'lucide-react';
 
 interface MathInputProps {
   value: string;
@@ -23,6 +24,7 @@ export const MathInput: React.FC<MathInputProps> = ({
   paddingRight = "0px"
 }) => {
   const mfRef = useRef<any>(null);
+  const [isMathMode, setIsMathMode] = useState(true);
 
   useEffect(() => {
     if (mfRef.current) {
@@ -31,12 +33,15 @@ export const MathInput: React.FC<MathInputProps> = ({
       }
       
       // Configure mathfield
-      mfRef.current.mathVirtualKeyboardPolicy = "auto"; 
+      mfRef.current.mathVirtualKeyboardPolicy = "manual"; 
       mfRef.current.disabled = disabled;
       
-      // Explicitly set options for virtual keyboard
+      // Explicitly set options
       mfRef.current.setOptions({
-        virtualKeyboardMode: 'onfocus', // Shows the keyboard when focused
+        virtualKeyboardMode: 'manual',
+        virtualKeyboardToggle: 'none',
+        menuToggle: 'none',
+        smartMode: false, // We control the mode manually
       });
 
       const handleFocus = () => {
@@ -56,7 +61,21 @@ export const MathInput: React.FC<MathInputProps> = ({
     }
   }, [disabled, autoFocus]);
 
-  // Update value when prop changes (for external updates like the custom keyboard)
+  // Update mode when toggled
+  useEffect(() => {
+    if (mfRef.current) {
+      // Use executeCommand to change mode if possible, or just set it
+      // In MathLive, 'math' mode is the default. 'text' mode is for text.
+      // We can use setOptions or executeCommand
+      if (isMathMode) {
+        mfRef.current.executeCommand(['switch-mode', 'math']);
+      } else {
+        mfRef.current.executeCommand(['switch-mode', 'text']);
+      }
+    }
+  }, [isMathMode]);
+
+  // Update value when prop changes
   useEffect(() => {
     if (mfRef.current && mfRef.current.value !== value) {
       mfRef.current.value = value;
@@ -74,10 +93,19 @@ export const MathInput: React.FC<MathInputProps> = ({
     }
   };
 
+  const toggleMathMode = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsMathMode(!isMathMode);
+    if (mfRef.current) {
+      mfRef.current.focus();
+    }
+  };
+
   const MathField = 'math-field' as any;
 
   return (
-    <div className={`math-field-container ${className}`}>
+    <div className={`math-field-container relative flex items-center ${className}`}>
       <MathField
         ref={mfRef}
         onInput={handleInput}
@@ -85,8 +113,8 @@ export const MathInput: React.FC<MathInputProps> = ({
         style={{
           width: '100%',
           padding: '12px 16px',
-          paddingRight: paddingRight,
-          fontSize: '1.25rem',
+          paddingRight: `calc(${paddingRight} + 40px)`,
+          fontSize: '1.15rem',
           outline: 'none',
           border: 'none',
           background: 'transparent',
@@ -96,6 +124,21 @@ export const MathInput: React.FC<MathInputProps> = ({
       >
         {value}
       </MathField>
+      
+      <button
+        onClick={toggleMathMode}
+        type="button"
+        title={isMathMode ? "Switch to Text Mode" : "Switch to Math Mode"}
+        className={`absolute right-4 p-2 rounded-xl transition-all shadow-sm ${
+          isMathMode 
+            ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
+            : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+        }`}
+        style={{ right: `calc(${paddingRight} + 12px)` }}
+      >
+        {isMathMode ? <Sigma size={18} /> : <Type size={18} />}
+      </button>
+
       {!value && placeholder && (
         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-lg">
           {placeholder}

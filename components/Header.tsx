@@ -33,12 +33,12 @@ export const Header: React.FC = () => {
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-500">
           <button onClick={() => scrollToSection('how-it-works')} className="hover:text-indigo-600 transition-colors">How it works</button>
           <button onClick={() => scrollToSection('features')} className="hover:text-indigo-600 transition-colors">Features</button>
-          <a 
-            href="mailto:support@mathvision.ai" 
+          <button 
+            onClick={() => window.dispatchEvent(new Event('show_help'))}
             className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-all"
           >
             Support
-          </a>
+          </button>
         </div>
       </div>
     </div>

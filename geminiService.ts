@@ -18,7 +18,7 @@ export const solveMathEquation = async (input: { image?: string; text?: string; 
     3. explanation: A detailed Markdown explanation (Essay mode).
     4. steps: A list of simplified steps for a carousel (Easy mode).
 
-    BONUS: ONLY if a visual diagram (geometry shape, coordinate graph, number line) is STRICTLY NECESSARY to understand a specific step, generate a clean, minimal SVG string for it under 'diagramSvg' within that step. Do NOT generate diagrams unless they provide critical clarity that text cannot.
+    BONUS: ONLY if a visual diagram (geometry shape, coordinate graph, number line) is STRICTLY NECESSARY to understand a specific step, generate a clean, minimal SVG string for it under 'diagramSvg' within that step. Do NOT generate diagrams unless they provide critical clarity that text cannot. CRITICAL: Diagrams must NOT spoil the final answer or include solution values; they should only represent the problem logic visually.
   `;
 
   try {
@@ -92,11 +92,17 @@ export const generateQuizQuestion = async (topic: string): Promise<QuizQuestion>
     2. Given values/constraints as a bulleted list (if multiple).
     3. A direct instruction like "Find the value of..." or "Prove that...".
     
-    TONE: Professional, academic, exam-like. Avoid patronizing language.
+    TONE: Professional, academic, exam-like. 
+    
+    LANGUAGE: Adapt the linguistic complexity to the topic. For elementary school topics (e.g., 'Addition', 'Subtraction', 'Place Value'), use clear, simple vocabulary appropriate for children. For advanced or university-level topics, use formal academic language. Avoid being overly simplistic or patronizing; match the tone to the target audience of the topic.
+    
+    STEPS: Provide a logical breakdown of 1-4 steps. Each step must be a significant progression. Do NOT create trivial steps (e.g. "Step 2: Conclusion"). The last step should always represent the final answer.
     
     Use LaTeX for all expressions. Wrap ANY mathematical expression (numbers, variables, formulas) in double dollar signs (e.g. $$x = 5$$).
     
-    DIAGRAMS: For ANY question involving geometry, trigonometry, coordinates, or spatial relationships, you MUST provide a 'diagramSvg'. The diagram should be minimal, clean, and use <text> elements for labels.
+    DIAGRAMS: For ANY question involving geometry, trigonometry, coordinates, or spatial relationships, you MUST provide a 'diagramSvg'. 
+    
+    CRITICAL DIAGRAM SAFETY: The 'diagramSvg' must ONLY represent the initial problem state. You are STRICTLY FORBIDDEN from including the final answer, solution values, or the 'target' value (N) in the diagram if it would spoil the question. For example, on a number line, you may mark the reference points, but do NOT mark the exact answer point.
   `;
 
   try {
@@ -139,13 +145,25 @@ export const generateQuizQuestion = async (topic: string): Promise<QuizQuestion>
   }
 };
 
-export const evaluateStep = async (question: string, expectedMath: string, userMath: string): Promise<QuizFeedback> => {
+export const evaluateStep = async (question: string, expectedMath: string, userMath: string, finalAnswer?: string): Promise<QuizFeedback> => {
   const prompt = `
     The math question is: "${question}"
-    The expected next step expression is: "${expectedMath}"
+    ${finalAnswer ? `The FINAL intended answer to the entire question is: "${finalAnswer}"` : ''}
+    The expected NEXT STEP expression is: "${expectedMath}"
+    
     The user provided: "${userMath}"
-    Evaluate if the user's expression is mathematically equivalent to the expected step or represents a correct progression.
-    Provide your evaluation in JSON.
+    
+    Evaluate two things:
+    1. Is the user's expression mathematically equivalent to the expected NEXT STEP?
+    2. Is the user's expression (or its direct result) already the FINAL intended answer for the entire question?
+    
+    TONE: Ensure the message matches the linguistic complexity of the topic. Encourage younger students with simpler praise; use technical confirmation for advanced topics.
+    
+    Provide your evaluation in JSON:
+    - isCorrect (boolean): true if it matches the next step OR if it's the final answer.
+    - isFinalAnswer (boolean): true ONLY if the user provided the final answer to the entire question.
+    - message (string): Feedback for the user. If they reached the final answer, congratulate them.
+    - improvement (string): Optional tip.
   `;
 
   try {
@@ -158,6 +176,7 @@ export const evaluateStep = async (question: string, expectedMath: string, userM
           type: Type.OBJECT,
           properties: {
             isCorrect: { type: Type.BOOLEAN },
+            isFinalAnswer: { type: Type.BOOLEAN },
             message: { type: Type.STRING },
             improvement: { type: Type.STRING }
           },
@@ -173,9 +192,12 @@ export const evaluateStep = async (question: string, expectedMath: string, userM
   }
 };
 
-export const generateLesson = async (topic: string): Promise<Lesson> => {
+export const generateLesson = async (topic: string, level: number = 1): Promise<Lesson> => {
   const prompt = `
-    You are a master math teacher. Create a structured lesson on: "${topic}".
+    You are a master math teacher. Create a structured interactive lesson on: "${topic}".
+    This is Level ${level} of the topic. ${level > 1 ? 'Focus on more advanced concepts, complex applications, and deeper theoretical understanding than the basic level.' : 'Start with fundamental concepts and clear explanations.'}
+    
+    LANGUAGE: Match the vocabulary and complexity to the difficulty of the topic. Use simpler words for elementary topics and academic terminology only for advanced subjects.
     
     STRUCTURE:
     1. Introduction: The core concept and its significance.
@@ -184,7 +206,12 @@ export const generateLesson = async (topic: string): Promise<Lesson> => {
     4. Pro Tips & Common Pitfalls.
 
     For each section, provide a title and Markdown content. Use LaTeX ($$formula$$) for all math. 
+    Use \\n for intentional line breaks in markdown content.
     
+    DIAGRAMS: For geometric or visual concepts, provide a 'diagramSvg'. CRITICAL: Do NOT include final answers or spoilers in diagrams.
+    
+    Provide a 'description' (short engaging summary) and 'outline' (list of key takeaways).
+
     In Checkpoints, use standard exam-style phrasing.
   `;
 
@@ -197,6 +224,8 @@ export const generateLesson = async (topic: string): Promise<Lesson> => {
         responseSchema: {
           type: Type.OBJECT,
           properties: {
+            description: { type: Type.STRING },
+            outline: { type: Type.ARRAY, items: { type: Type.STRING } },
             sections: {
               type: Type.ARRAY,
               items: {
@@ -204,7 +233,7 @@ export const generateLesson = async (topic: string): Promise<Lesson> => {
                 properties: {
                   title: { type: Type.STRING },
                   content: { type: Type.STRING },
-                  diagramSvg: { type: Type.STRING }
+                  diagramSvg: { type: Type.STRING, description: "SVG string for geometric concepts" }
                 },
                 required: ["title", "content"]
               }
@@ -222,7 +251,7 @@ export const generateLesson = async (topic: string): Promise<Lesson> => {
               }
             }
           },
-          required: ["sections", "checkpoints"]
+          required: ["description", "outline", "sections", "checkpoints"]
         }
       }
     });
@@ -231,6 +260,8 @@ export const generateLesson = async (topic: string): Promise<Lesson> => {
     const data = JSON.parse(jsonStr);
     return {
       topic,
+      description: data.description,
+      outline: data.outline,
       sections: data.sections,
       checkpoints: data.checkpoints
     };
@@ -274,6 +305,32 @@ export const evaluateLessonAnswer = async (topic: string, question: string, user
   } catch (error) {
     console.error("Evaluation Error:", error);
     return { isCorrect: false, message: "I couldn't evaluate your answer right now. Check the reference answer to see if you were right!" };
+  }
+};
+
+export const generateTopicOutline = async (topic: string, level: number): Promise<string[]> => {
+  const prompt = `
+    Generate a 4-item list of key learning objectives for Level ${level} of "${topic}".
+    The items should be short (max 8 words each) and focus on advanced progression.
+    Return ONLY a JSON array of strings.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: { parts: [{ text: prompt }] },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING }
+        }
+      }
+    });
+    return JSON.parse(response.text?.trim() || "[]");
+  } catch (error) {
+    console.error("Error generating outline:", error);
+    return ["Concept Review", "Practical Application", "Problem Solving", "Final Mastery"];
   }
 };
 

@@ -143,7 +143,13 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelectItem }) => {
 
               <div className="flex items-center gap-2 md:opacity-0 group-hover:opacity-100 transition-all">
                 <button
-                  onClick={() => onSelectItem(item)}
+                  onClick={() => {
+                    if (item.type === 'lesson') {
+                      window.dispatchEvent(new CustomEvent('learn_topic', { detail: item.topic }));
+                    } else {
+                      onSelectItem(item);
+                    }
+                  }}
                   className="p-3 md:px-4 md:py-2 bg-indigo-600 text-white rounded-xl font-black text-xs shadow-lg shadow-indigo-100 flex items-center gap-2 focus:opacity-100 outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2"
                 >
                   <span className="hidden md:inline">View Detail</span>

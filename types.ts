@@ -29,6 +29,7 @@ export interface QuizFeedback {
   isCorrect: boolean;
   message: string;
   improvement?: string;
+  isFinalAnswer?: boolean;
 }
 
 export interface LessonSection {
