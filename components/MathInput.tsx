@@ -1,17 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import 'mathlive';
 
-// Declare the custom element for TypeScript
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'math-field': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & {
-        onInput?: (e: any) => void;
-      }, HTMLElement>;
-    }
-  }
-}
-
 interface MathInputProps {
   value: string;
   onChange: (value: string) => void;
@@ -20,6 +9,7 @@ interface MathInputProps {
   className?: string;
   disabled?: boolean;
   autoFocus?: boolean;
+  paddingRight?: string;
 }
 
 export const MathInput: React.FC<MathInputProps> = ({ 
@@ -29,22 +19,26 @@ export const MathInput: React.FC<MathInputProps> = ({
   placeholder, 
   className = "",
   disabled = false,
-  autoFocus = false
+  autoFocus = false,
+  paddingRight = "0px"
 }) => {
   const mfRef = useRef<any>(null);
 
   useEffect(() => {
     if (mfRef.current) {
-      // Set the value initially
-      // Optimization: only set if different to avoid cursor reset
       if (mfRef.current.value !== value) {
         mfRef.current.value = value;
       }
       
       // Configure mathfield
-      mfRef.current.mathVirtualKeyboardPolicy = "manual"; 
+      mfRef.current.mathVirtualKeyboardPolicy = "auto"; 
       mfRef.current.disabled = disabled;
       
+      // Explicitly set options for virtual keyboard
+      mfRef.current.setOptions({
+        virtualKeyboardMode: 'onfocus', // Shows the keyboard when focused
+      });
+
       const handleFocus = () => {
         (window as any).activeMathField = mfRef.current;
       };
@@ -53,7 +47,7 @@ export const MathInput: React.FC<MathInputProps> = ({
       currentMf.addEventListener('focus', handleFocus);
       
       if (autoFocus) {
-        setTimeout(() => currentMf.focus(), 100);
+        setTimeout(() => currentMf.focus(), 150);
       }
 
       return () => {
@@ -80,15 +74,18 @@ export const MathInput: React.FC<MathInputProps> = ({
     }
   };
 
+  const MathField = 'math-field' as any;
+
   return (
     <div className={`math-field-container ${className}`}>
-      <math-field
+      <MathField
         ref={mfRef}
         onInput={handleInput}
         onKeyDown={handleKeyDown as any}
         style={{
           width: '100%',
           padding: '12px 16px',
+          paddingRight: paddingRight,
           fontSize: '1.25rem',
           outline: 'none',
           border: 'none',
@@ -98,7 +95,7 @@ export const MathInput: React.FC<MathInputProps> = ({
         }}
       >
         {value}
-      </math-field>
+      </MathField>
       {!value && placeholder && (
         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-lg">
           {placeholder}

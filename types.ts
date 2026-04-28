@@ -45,6 +45,8 @@ export interface LessonQuestion {
 
 export interface Lesson {
   topic: string;
+  description?: string;
+  outline?: string[];
   sections: LessonSection[];
   checkpoints: LessonQuestion[];
 }

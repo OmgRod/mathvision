@@ -85,10 +85,18 @@ export const solveMathEquation = async (input: { image?: string; text?: string; 
 
 export const generateQuizQuestion = async (topic: string): Promise<QuizQuestion> => {
   const prompt = `
-    Generate a challenging but solvable math question related to the topic: "${topic}".
-    ONLY if a visual diagram (geometry shape, coordinate graph, number line) is STRICTLY NECESSARY to understand the question, include a 'diagramSvg' (minimal SVG string).
+    Generate a professional EXAM-STYLE math question related to "${topic}".
     
-    IMPORTANT: Wrap any mathematical expressions within the question text AND the step instructions (titles) using double dollar signs (e.g., $$x^2 + 5x = 0$$) so they can be rendered with KaTeX.
+    STRUCTURE:
+    1. A concise problem statement.
+    2. Given values/constraints as a bulleted list (if multiple).
+    3. A direct instruction like "Find the value of..." or "Prove that...".
+    
+    TONE: Professional, academic, exam-like. Avoid patronizing language.
+    
+    Use LaTeX for all expressions. Wrap ANY mathematical expression (numbers, variables, formulas) in double dollar signs (e.g. $$x = 5$$).
+    
+    DIAGRAMS: For ANY question involving geometry, trigonometry, coordinates, or spatial relationships, you MUST provide a 'diagramSvg'. The diagram should be minimal, clean, and use <text> elements for labels.
   `;
 
   try {
@@ -167,22 +175,17 @@ export const evaluateStep = async (question: string, expectedMath: string, userM
 
 export const generateLesson = async (topic: string): Promise<Lesson> => {
   const prompt = `
-    You are a master math teacher who makes learning FUN and SIMPLE. Create a lesson on: "${topic}".
-    
-    TONE: Super friendly, encouraging, and clear. Avoid heavy jargon. Use real-world analogies (e.g., "Think of an equation like a balanced playground seesaw").
+    You are a master math teacher. Create a structured lesson on: "${topic}".
     
     STRUCTURE:
-    1. Hook: Start with a "Why does this matter?" or a fun fact.
-    2. The "Secret Sauce": Explain the concept in the simplest possible way.
-    3. Practice Lap: Walk through one easy example.
-    4. Pro Tip: A clever shortcut or common mistake to avoid.
+    1. Introduction: The core concept and its significance.
+    2. Theoretical Foundation: Clear explanation of the rules/formulas.
+    3. Worked Example: An exam-style problem with a step-by-step solution.
+    4. Pro Tips & Common Pitfalls.
 
-    For each section, provide a title and Markdown content. Use LaTeX for math ($$formula$$). 
+    For each section, provide a title and Markdown content. Use LaTeX ($$formula$$) for all math. 
     
-    CRITICAL: 
-    - Keep it simple enough for someone seeing it for the first time.
-    - Use LaTeX for ALL math expressions.
-    - If a simple diagram (like a sketch of a graph or a shape) helps, include 'diagramSvg'.
+    In Checkpoints, use standard exam-style phrasing.
   `;
 
   try {

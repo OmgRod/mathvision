@@ -295,7 +295,7 @@ export const PRACTICE_TOPICS: MathTopic[] = [
 
   // --- OPTIMIZATION & NUMERICAL ---
   { name: "Linear Programming: Simplex", category: "Optimization", level: "University", description: "Solving constraints in N-dimensions" },
-  { name: "Gradient Descent", category: "Optimization", level: "Computing", level: "University", description: "Step-by-step minimization" },
+  { name: "Gradient Descent", category: "Optimization", level: "University", description: "Step-by-step minimization" },
   { name: "Lagrange Multipliers", category: "Calculus", level: "University", description: "Optimization with equality constraints" },
   { name: "Runge-Kutta Methods", category: "Numerical", level: "Engineering", description: "Solving ODEs numerically" },
   { name: "Monte Carlo Simulations", category: "Numerical", level: "Advanced", description: "Solving problems using randomness" },
@@ -409,7 +409,52 @@ export const PRACTICE_TOPICS: MathTopic[] = [
   
   // --- FURTHER MATHS GCSE specific ---
   { name: "Differentiation: Stationary Points", category: "Calculus", level: "GCSE Higher", description: "Finding and classifying turning points" },
-  { name: "Proof: Algebraic Proof", category: "Algebra", level: "GCSE", description: "Proving odd/even results algebraically" }
+  { name: "Proof: Algebraic Proof", category: "Algebra", level: "GCSE", description: "Proving odd/even results algebraically" },
+
+  // --- FINAL COMPREHENSIVE CURRICULUM EXPANSION ---
+  // --- COMPUTER SCIENCE & ENGINEERING ---
+  { name: "Operating Systems: Process Scheduling", category: "Computing", level: "University", description: "FCFS, Round Robin, and Priority math" },
+  { name: "Compilers: Lexical Analysis", category: "Computing", level: "University", description: "Tokenizing code with finite automata" },
+  { name: "Computer Architecture: Pipelining", category: "Computing", level: "University", description: "Math of CPU instruction throughput" },
+  { name: "Digital Logic: Karnaugh Maps", category: "Computing", level: "University", description: "Simplifying boolean expressions visually" },
+  { name: "Networking: Subnetting Math", category: "Computing", level: "University", description: "Calculating IP ranges and masks" },
+  { name: "Database Normalization (1NF, 2NF, 3NF)", category: "Computing", level: "University", description: "Math of reducing data redundancy" },
+  { name: "Artificial Intelligence: Neural Net Backprop", category: "Computing", level: "Advanced", description: "The calculus of machine learning" },
+  
+  // --- ADVANCED PURE MATHEMATICS ---
+  { name: "Category Theory: Functors & Natural Transformations", category: "Algebra", level: "Advanced", description: "Maps between categories" },
+  { name: "Algebraic Geometry: Varieties", category: "Geometry", level: "Advanced", description: "Zero sets of polynomial systems" },
+  { name: "Galois Correspondence", category: "Algebra", level: "Advanced", description: "Deeper link between fields and groups" },
+  { name: "Measure Theory: Sigma-Algebras", category: "Analysis", level: "Advanced", description: "Foundation for Lebesgue integration" },
+  { name: "Complex Analysis: Riemann Surfaces", category: "Analysis", level: "Advanced", description: "Multi-valued complex functions" },
+  { name: "Number Theory: Elliptic Curves", category: "Arithmetic", level: "Advanced", description: "Points on cubic curves over fields" },
+  { name: "Topology: Knot Theory", category: "Topology", level: "Advanced", description: "Math of intertwined loops" },
+
+  // --- APPLIED MATH & PHYSICS (EXTREME) ---
+  // --- FLUIDS AND THERMO ---
+  { name: "Fluid Dynamics: Reynold's Number", category: "Physics Math", level: "Engineering", description: "Predicting laminar vs turbulent flow" },
+  { name: "Thermodynamics: Entropy & Enthalpy", category: "Physics Math", level: "University", description: "Mathematical laws of heat energy" },
+  { name: "Quantum Mechanics: Bra-Ket Notation", category: "Quantum", level: "University", description: "Dirac notation for state vectors" },
+  { name: "General Relativity: Schwarzschild Metric", category: "Physics Math", level: "Advanced", description: "Math of space-time around black holes" },
+  { name: "Analytical Mechanics: Poisson Brackets", category: "Physics Math", level: "Advanced", description: "Symplectic geometry of motion" },
+
+  // --- MORE SCHOOL / A-LEVEL CORE ---
+  { name: "Trigonometry: Double Angle Identities", category: "Geometry", level: "A-Level", description: "sin(2x), cos(2x) and tan(2x) formulas" },
+  { name: "Algebra: Partial Fractions", category: "Algebra", level: "A-Level", description: "Splitting complex fractions for integration" },
+  { name: "Calculus: Implicit Differentiation", category: "Calculus", level: "A-Level", description: "Differentiating equations like x² + y² = 25" },
+  { name: "Parametric Equations: Motion", category: "Calculus", level: "A-Level", description: "Defining curves with a hidden variable t" },
+  { name: "Probability: Normal Distribution", category: "Statistics", level: "A-Level", description: "The bell curve and Z-scores" },
+  { name: "Hypothesis Testing: Binomial", category: "Statistics", level: "A-Level", description: "Testing significance in discrete trials" },
+  
+  // --- LOGIC & SETS DEPTH ---
+  { name: "Boolean Algebra: De Morgan’s Laws", category: "Logic", level: "GCSE / A-Level", description: "Negating conjunctions and disjunctions" },
+  { name: "Predicate Logic: Quantifiers", category: "Logic", level: "University", description: "For all (∀) and There exists (∃)" },
+  { name: "Consistency and Completeness", category: "Logic", level: "University", description: "Meta-mathematics of logical systems" },
+
+  // --- FURTHER MISC ---
+  { name: "Fractals: Koch Snowflake", category: "Geometry", level: "High School", description: "Iterative perimeter expansion" },
+  { name: "Chaos: The Logistic Map", category: "Analysis", level: "University", description: "Bifurcation and population models" },
+  { name: "Graph Theory: Dijkstra's Algorithm", category: "Computing", level: "University", description: "Finding the shortest path in weights" }
 ];
 
 

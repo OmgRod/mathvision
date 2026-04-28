@@ -25,7 +25,7 @@ const App: React.FC = () => {
     result: null,
   });
 
-  const [preLoadedPractice, setPreLoadedPractice] = useState<any>(null);
+  const [preLoadedPractice, setPreLoadedPractice] = useState<{ topic: string, data: any } | null>(null);
   const [preLoadedLesson, setPreLoadedLesson] = useState<any>(null);
 
   const handleSelectHistoryItem = (item: HistoryItem) => {
@@ -33,7 +33,7 @@ const App: React.FC = () => {
       setState({ isProcessing: false, error: null, result: item.data });
       setMode('solver');
     } else if (item.type === 'practice') {
-      setPreLoadedPractice(item.data);
+      setPreLoadedPractice({ topic: item.topic, data: item.data });
       setMode('practice');
     } else if (item.type === 'lesson') {
       setPreLoadedLesson(item.data);

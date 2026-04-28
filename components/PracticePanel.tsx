@@ -17,10 +17,14 @@ import {
   GraduationCap,
   Sparkles,
   Volume2,
-  PenTool
+  PenTool,
+  History,
+  Pencil
 } from 'lucide-react';
 import { TTSButton } from './TTSButton';
-import { MathKeyboard } from './MathKeyboard';
+import { Whiteboard } from './Whiteboard';
+import { CelebrationOverlay } from './CelebrationOverlay';
+import { addXP } from '../userService';
 import { saveToHistory } from '../historyService';
 import { generateQuizQuestion, evaluateStep } from '../geminiService';
 import { QuizQuestion, QuizFeedback } from '../types';
@@ -30,19 +34,20 @@ import rehypeKatex from 'rehype-katex';
 import { MathInput } from './MathInput';
 import { PRACTICE_TOPICS, MathTopic } from '../constants';
 
-export const PracticePanel: React.FC<{ initialData?: QuizQuestion }> = ({ initialData }) => {
-  const [topic, setTopic] = useState<string | null>(initialData ? 'History Item' : null);
+export const PracticePanel: React.FC<{ initialData?: { topic: string, data: QuizQuestion } }> = ({ initialData }) => {
+  const [topic, setTopic] = useState<string | null>(initialData?.topic || null);
   const [customTopic, setCustomTopic] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [question, setQuestion] = useState<QuizQuestion | null>(initialData || null);
+  const [question, setQuestion] = useState<QuizQuestion | null>(initialData?.data || null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [userAnswer, setUserAnswer] = useState('');
   const [feedback, setFeedback] = useState<QuizFeedback | null>(null);
   const [isFinished, setIsFinished] = useState(false);
   const [score, setScore] = useState(0);
   const [hintsUsed, setHintsUsed] = useState(0);
-  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [completedSteps, setCompletedSteps] = useState<{ step: any, answer: string }[]>([]);
+  const [showWhiteboard, setShowWhiteboard] = useState(false);
   
   // Search and Filter State
   const [searchQuery, setSearchQuery] = useState('');
@@ -80,6 +85,7 @@ export const PracticePanel: React.FC<{ initialData?: QuizQuestion }> = ({ initia
     setIsFinished(false);
     setScore(0);
     setHintsUsed(0);
+    setCompletedSteps([]);
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setLoading(true);
@@ -105,12 +111,7 @@ export const PracticePanel: React.FC<{ initialData?: QuizQuestion }> = ({ initia
       setFeedback(result);
       
       if (result.isCorrect) {
-        if (currentStepIndex === question.correctSteps.length - 1) {
-          setIsFinished(true);
-          setScore(prev => prev + 10);
-        } else {
-          setScore(prev => prev + 5);
-        }
+        setScore(prev => prev + (currentStepIndex === question.correctSteps.length - 1 ? 10 : 5));
       }
     } catch (err) {
       console.error(err);
@@ -120,10 +121,23 @@ export const PracticePanel: React.FC<{ initialData?: QuizQuestion }> = ({ initia
   };
 
   const proceedToNext = () => {
-    if (currentStepIndex < (question?.correctSteps.length || 0) - 1) {
+    if (!question) return;
+    
+    // Store current step and answer in history
+    setCompletedSteps(prev => [
+      ...prev, 
+      { step: question.correctSteps[currentStepIndex], answer: userAnswer }
+    ]);
+
+    if (currentStepIndex < (question.correctSteps.length || 0) - 1) {
       setCurrentStepIndex(prev => prev + 1);
       setUserAnswer('');
       setFeedback(null);
+    } else {
+      const xpAmount = score + 50; // Base completion bonus
+      addXP(xpAmount);
+      window.dispatchEvent(new Event('xp_updated'));
+      setIsFinished(true);
     }
   };
 
@@ -369,6 +383,31 @@ export const PracticePanel: React.FC<{ initialData?: QuizQuestion }> = ({ initia
             )}
 
             <div className="space-y-6">
+              {/* Previous Completed Steps */}
+              <AnimatePresence>
+                {completedSteps.length > 0 && (
+                  <div className="space-y-4 pt-4 border-t border-slate-100">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                       <History size={12} />
+                       Previous Steps
+                    </span>
+                    {completedSteps.map((cs, idx) => (
+                      <motion.div 
+                        key={idx}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-1"
+                      >
+                        <div className="text-xs font-bold text-slate-500 uppercase">Step {idx + 1}: {cs.step.title}</div>
+                        <div className="font-mono text-indigo-600 bg-white inline-block px-3 py-1 rounded-lg border border-slate-100 shadow-sm">
+                           {cs.answer}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </AnimatePresence>
+
               <div className="flex items-center gap-2">
                 <div className="h-px flex-grow bg-slate-100"></div>
                 <span className="text-xs font-bold text-slate-300 uppercase">Step {currentStepIndex + 1}</span>
@@ -385,13 +424,6 @@ export const PracticePanel: React.FC<{ initialData?: QuizQuestion }> = ({ initia
               <div className="space-y-4">
                 <label className="block text-sm font-bold text-slate-500">What's the next step? Type the mathematical expression:</label>
                 <div className="relative">
-                  <MathKeyboard 
-                    isOpen={isKeyboardOpen}
-                    onClose={() => setIsKeyboardOpen(false)}
-                    onInsert={(sym) => {
-                      setUserAnswer(prev => prev + sym);
-                    }}
-                  />
                   <div className="relative">
                     <MathInput
                       value={userAnswer}
@@ -400,15 +432,9 @@ export const PracticePanel: React.FC<{ initialData?: QuizQuestion }> = ({ initia
                       placeholder="e.g. 2x = 10"
                       className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl focus-within:border-indigo-500 transition-all"
                       onEnter={handleNextStep}
+                      paddingRight="60px"
                     />
                     <div className="absolute right-1.5 top-1.5 bottom-1.5 flex gap-1 z-10">
-                      <button
-                        onClick={() => setIsKeyboardOpen(!isKeyboardOpen)}
-                        className="p-3 text-indigo-400 hover:text-indigo-600 bg-indigo-50 rounded-xl transition-colors"
-                        title="Math Keyboard"
-                      >
-                        <PenTool size={20} />
-                      </button>
                       <button
                         onClick={handleNextStep}
                         disabled={loading || !userAnswer || feedback?.isCorrect}
@@ -494,39 +520,31 @@ export const PracticePanel: React.FC<{ initialData?: QuizQuestion }> = ({ initia
         </div>
       )}
 
+      {showWhiteboard && (
+        <Whiteboard onClose={() => setShowWhiteboard(false)} />
+      )}
+
+      <button
+        onClick={() => setShowWhiteboard(!showWhiteboard)}
+        className="fixed bottom-6 left-6 z-40 p-4 bg-slate-900 text-white rounded-2xl shadow-2xl hover:bg-slate-800 transition-all flex items-center gap-2"
+      >
+        <Pencil size={20} />
+        <span className="font-bold text-sm hidden md:inline">Open Scratchpad</span>
+      </button>
+
       {isFinished && (
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center space-y-8 py-12"
-        >
-          <div className="mx-auto w-24 h-24 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center shadow-xl shadow-amber-50">
-            <Trophy size={48} />
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-4xl font-black text-slate-900">Topic Mastered!</h2>
-            <p className="text-slate-500">You successfully finished the step-by-step challenge.</p>
-          </div>
-          <div className="flex flex-col items-center gap-4 bg-white p-8 rounded-3xl border border-slate-100 shadow-xl max-w-xs mx-auto">
-            <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Final Score</span>
-            <span className="text-6xl font-black text-indigo-600">{score}</span>
-            <span className="text-xs text-slate-400">Hints used: {hintsUsed}</span>
-          </div>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <button
-              onClick={() => startPractice(topic!)}
-              className="px-10 py-4 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100"
-            >
-              Another Question
-            </button>
-            <button
-              onClick={() => setTopic(null)}
-              className="px-10 py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition-all"
-            >
-              Back to Topics
-            </button>
-          </div>
-        </motion.div>
+        <CelebrationOverlay 
+          xpEarned={score + 50}
+          message={`You crushed the practice module on ${topic}! You've gained 100% completion.`}
+          onHome={() => {
+            setTopic(null);
+            setIsFinished(false);
+          }}
+          onNext={() => {
+            setIsFinished(false);
+            startPractice(topic!);
+          }}
+        />
       )}
     </div>
   );

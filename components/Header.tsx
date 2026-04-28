@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Sigma } from 'lucide-react';
+import { UserStatus } from './UserStatus';
 
 export const Header: React.FC = () => {
   const scrollToSection = (id: string) => {
@@ -26,7 +27,10 @@ export const Header: React.FC = () => {
             MathVision<span className="text-indigo-600">AI</span>
           </h1>
         </div>
-        <div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-500">
+
+        <div className="flex items-center gap-4">
+          <UserStatus />
+          <div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-500">
           <button onClick={() => scrollToSection('how-it-works')} className="hover:text-indigo-600 transition-colors">How it works</button>
           <button onClick={() => scrollToSection('features')} className="hover:text-indigo-600 transition-colors">Features</button>
           <a 
@@ -37,6 +41,7 @@ export const Header: React.FC = () => {
           </a>
         </div>
       </div>
-    </header>
+    </div>
+  </header>
   );
 };

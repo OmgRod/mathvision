@@ -29,11 +29,61 @@ export const TTSButton: React.FC<TTSButtonProps> = ({ text, className = '', size
       window.speechSynthesis.cancel();
       setIsSpeaking(false);
     } else {
-      // Clean text from Markdown artifacts for better speech
+      // Clean text from LaTeX and Markdown for better speech
+      const cleanLaTeX = (str: string) => {
+        return str
+          .replace(/\\text\{(.*?)\}/g, '$1')
+          .replace(/\\mathrm\{(.*?)\}/g, '$1')
+          .replace(/\\mathbf\{(.*?)\}/g, '$1')
+          .replace(/\\mathit\{(.*?)\}/g, '$1')
+          .replace(/\\mathtt\{(.*?)\}/g, '$1')
+          .replace(/\\mathsf\{(.*?)\}/g, '$1')
+          .replace(/\\frac\{(.*?)\}\{(.*?)\}/g, '$1 divided by $2')
+          .replace(/\\sqrt\{(.*?)\}/g, 'square root of $1')
+          .replace(/\\sqrt\[(.*?)\]\{(.*?)\}/g, '$1 root of $2')
+          .replace(/\^\{(.*?)\}/g, ' to the power of $1')
+          .replace(/\^\\circ/g, ' degrees ')
+          .replace(/\^circ/g, ' degrees ')
+          .replace(/\^/g, ' to the power of ')
+          .replace(/_\{(.*?)\}/g, ' sub $1')
+          .replace(/_(.)/g, ' sub $1')
+          .replace(/\\sin/g, ' sine ')
+          .replace(/\\cos/g, ' cosine ')
+          .replace(/\\tan/g, ' tangent ')
+          .replace(/\\times/g, ' times ')
+          .replace(/\\cdot/g, ' dot ')
+          .replace(/\\div/g, ' divided by ')
+          .replace(/\\pm/g, ' plus or minus ')
+          .replace(/\\approx/g, ' approximately ')
+          .replace(/\\neq/g, ' is not equal to ')
+          .replace(/\\leq/g, ' is less than or equal to ')
+          .replace(/\\geq/g, ' is greater than or equal to ')
+          .replace(/\\infty/g, ' infinity ')
+          .replace(/\\pi/g, ' pi ')
+          .replace(/\\alpha/g, ' alpha ')
+          .replace(/\\beta/g, ' beta ')
+          .replace(/\\theta/g, ' theta ')
+          .replace(/\\lambda/g, ' lambda ')
+          .replace(/\\Delta/g, ' delta ')
+          .replace(/\\sum/g, ' sum ')
+          .replace(/\\int/g, ' integral ')
+          .replace(/\\vec\{(.*?)\}/g, 'vector $1')
+          .replace(/\\(?:left|right)/g, '')
+          .replace(/\\,/g, ' ')
+          .replace(/\\;/g, ' ')
+          .replace(/\\!/g, '')
+          .replace(/\\ /g, ' ')
+          .replace(/\\/g, '')
+          .replace(/\{/g, '')
+          .replace(/\}/g, '')
+          .replace(/\$/g, '');
+      };
+
       const cleanText = text
-        .replace(/\$\$(.*?)\$\$/g, '$1') // Remove LaTeX delimiters but keep content
-        .replace(/\[(.*?)\]\(.*?\)/g, '$1') // Remove links
-        .replace(/[#*`_]/g, ''); // Remove basic markdown symbols
+        .replace(/\$\$(.*?)\$\$/g, (_, match) => cleanLaTeX(match))
+        .replace(/\$(.*?)\$/g, (_, match) => cleanLaTeX(match))
+        .replace(/\[(.*?)\]\(.*?\)/g, '$1')
+        .replace(/[#*`_]/g, '');
 
       const utterance = new SpeechSynthesisUtterance(cleanText);
       utterance.onend = () => setIsSpeaking(false);

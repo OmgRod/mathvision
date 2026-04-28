@@ -5,10 +5,12 @@ import { generateLesson, askLessonClarification, evaluateLessonAnswer } from '..
 import { 
   ArrowLeft, Search, GraduationCap, ChevronRight, ChevronLeft, 
   MessageCircle, Send, Loader2, BookOpen, CheckCircle2, AlertCircle, 
-  Lightbulb, RefreshCcw, Volume2, Sparkles, PenTool
+  Lightbulb, RefreshCcw, Volume2, Sparkles, PenTool, Pencil
 } from 'lucide-react';
 import { TTSButton } from './TTSButton';
-import { MathKeyboard } from './MathKeyboard';
+import { Whiteboard } from './Whiteboard';
+import { CelebrationOverlay } from './CelebrationOverlay';
+import { addXP } from '../userService';
 import { saveToHistory } from '../historyService';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
@@ -38,7 +40,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
   const [userAnswer, setUserAnswer] = useState('');
   const [checkpointFeedback, setCheckpointFeedback] = useState<QuizFeedback | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
-  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [showWhiteboard, setShowWhiteboard] = useState(false);
 
   const levels = useMemo<string[]>(() => ['All', ...Array.from(new Set(PRACTICE_TOPICS.map(t => t.level)))], []);
   const categories = useMemo<string[]>(() => ['All', ...Array.from(new Set(PRACTICE_TOPICS.map(t => t.category)))], []);
@@ -53,9 +55,13 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
     });
   }, [searchTerm, selectedLevel, selectedCategory]);
 
+  const [isFinished, setIsFinished] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'detail' | 'learning'>('list');
+
   const startLesson = async (selectedTopic: string) => {
     setTopic(selectedTopic);
     setLesson(null);
+    setViewMode('detail');
     setCurrentSectionIndex(0);
     setChatHistory([]);
     setLoading(true);
@@ -68,6 +74,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
       console.error(err);
       alert("Failed to load lesson. Please try again.");
       setTopic(null);
+      setViewMode('list');
     } finally {
       setLoading(false);
     }
@@ -76,11 +83,12 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
   const handleBackToTopics = () => {
     setTopic(null);
     setLesson(null);
+    setViewMode('list');
     setChatHistory([]);
     setCurrentSectionIndex(0);
     setShowCheckpoint(false);
+    setIsFinished(false);
   };
-
   const handleAskTutor = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatQuestion.trim() || !lesson || isAsking) return;
@@ -134,6 +142,13 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
     }
   };
 
+  const prevSection = () => {
+    if (currentSectionIndex > 0) {
+      setCurrentSectionIndex(prev => prev - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const nextCheckpoint = () => {
     if (!lesson) return;
     if (currentCheckpointIndex < lesson.checkpoints.length - 1) {
@@ -142,12 +157,27 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
       setCheckpointFeedback(null);
     } else {
       // Completed all checkpoints
-      alert("Lesson completed! Great job.");
-      handleBackToTopics();
+      addXP(150); // Comprehensive lesson bonus
+      window.dispatchEvent(new Event('xp_updated'));
+      setIsFinished(true);
     }
   };
 
-  if (!topic) {
+  const prevCheckpoint = () => {
+    if (currentCheckpointIndex > 0) {
+      setCurrentCheckpointIndex(prev => prev - 1);
+      setUserAnswer('');
+      setCheckpointFeedback(null);
+    } else {
+      setShowCheckpoint(false);
+    }
+  };
+
+  const formatMarkdown = (text: string) => {
+    return text.replace(/\\n/g, '\n');
+  };
+
+  if (viewMode === 'list') {
     return (
       <div className="space-y-12 py-10 px-4 max-w-5xl mx-auto pb-40">
         <header className="text-center space-y-6 max-w-2xl mx-auto">
@@ -245,6 +275,105 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
     );
   }
 
+  if (viewMode === 'detail') {
+    return (
+      <div className="max-w-5xl mx-auto py-12 px-4 space-y-12">
+        <button 
+          onClick={handleBackToTopics}
+          className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold mb-8 transition-colors"
+        >
+          <ArrowLeft size={18} />
+          Back to Library
+        </button>
+
+        {loading ? (
+           <div className="flex flex-col items-center justify-center py-40 space-y-6">
+             <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} className="text-indigo-600">
+               <Loader2 size={64} />
+             </motion.div>
+             <h3 className="text-2xl font-black text-slate-900">Gathering Intelligence...</h3>
+           </div>
+        ) : lesson && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-12"
+          >
+            <div className="md:col-span-2 space-y-8">
+              <div className="space-y-4">
+                 <h1 className="text-6xl font-black text-slate-900 tracking-tight leading-none uppercase">{lesson.topic}</h1>
+                 <div className="flex gap-3">
+                   <span className="px-4 py-1.5 bg-indigo-600 text-white rounded-full text-xs font-black uppercase tracking-widest">Featured Lesson</span>
+                   <span className="px-4 py-1.5 bg-slate-100 text-slate-500 rounded-full text-xs font-black uppercase tracking-widest">Mastery Required</span>
+                 </div>
+              </div>
+
+              <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl space-y-10">
+                <div className="space-y-4">
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Topic Overview</h3>
+                  <p className="text-xl text-slate-600 leading-relaxed font-medium">{lesson.description || "Dive deep into the fascinating details of this mathematical concept. Our AI tutor will guide you through theory and application."}</p>
+                </div>
+
+                {lesson.outline && (
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">What you'll learn</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {lesson.outline.map((item, i) => (
+                        <div key={i} className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                          <div className="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-[10px] font-bold">{i + 1}</div>
+                          <span className="font-bold text-slate-700">{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-6">
+               <div className="bg-slate-900 p-8 rounded-[3rem] text-white space-y-8 shadow-2xl relative overflow-hidden">
+                 <div className="absolute top-0 right-0 p-8 opacity-10">
+                   <GraduationCap size={120} />
+                 </div>
+                 <div className="space-y-2 relative z-10">
+                   <div className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-4">Academic Module</div>
+                   <div className="flex items-center gap-2 mb-2">
+                     <BookOpen size={16} className="text-indigo-400" />
+                     <span className="font-bold text-sm">{lesson.sections.length} Study Sections</span>
+                   </div>
+                   <div className="flex items-center gap-2">
+                     <CheckCircle2 size={16} className="text-emerald-400" />
+                     <span className="font-bold text-sm">{lesson.checkpoints.length} Knowledge Checkpoints</span>
+                   </div>
+                 </div>
+
+                 <button 
+                   onClick={() => setViewMode('learning')}
+                   className="w-full py-5 bg-white text-slate-900 rounded-2xl font-black text-lg hover:bg-slate-50 transition-all active:scale-95 shadow-xl shadow-white/5 relative z-10"
+                 >
+                   START LESSON
+                 </button>
+
+                 <div className="text-center relative z-10">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Est. Time: 15-20 Mins</span>
+                 </div>
+               </div>
+
+               <div className="p-6 bg-indigo-50 border border-indigo-100 rounded-[2rem] flex items-center gap-4">
+                  <div className="p-3 bg-white rounded-xl text-indigo-600">
+                    <Sparkles size={24} />
+                  </div>
+                  <div className="text-[10px] font-bold text-indigo-900 uppercase leading-snug">
+                    AI-Powered Dynamic Curriculum: Tailored to your pace and questions.
+                  </div>
+               </div>
+            </div>
+          </motion.div>
+        )}
+      </div>
+    );
+  }
+
   function Diagram({ svg }: { svg?: string }) {
     if (!svg) return null;
     return (
@@ -314,13 +443,21 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
                       remarkPlugins={[remarkMath]}
                       rehypePlugins={[rehypeKatex]}
                     >
-                      {lesson.sections[currentSectionIndex].content}
+                      {formatMarkdown(lesson.sections[currentSectionIndex].content)}
                     </ReactMarkdown>
                   </div>
 
                   <Diagram svg={lesson.sections[currentSectionIndex].diagramSvg} />
 
-                  <div className="mt-12 pt-8 border-t border-slate-100 flex justify-end">
+                  <div className="mt-12 pt-8 border-t border-slate-100 flex justify-between items-center">
+                    <button
+                      onClick={prevSection}
+                      disabled={currentSectionIndex === 0}
+                      className="flex items-center gap-2 px-6 py-4 text-slate-500 hover:text-indigo-600 font-bold disabled:opacity-30 disabled:pointer-events-none"
+                    >
+                      <ChevronLeft size={20} />
+                      Previous
+                    </button>
                     <button
                       onClick={nextSection}
                       className="flex items-center gap-2 px-8 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all hover:translate-x-1"
@@ -354,20 +491,13 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
                             remarkPlugins={[remarkMath]}
                             rehypePlugins={[rehypeKatex]}
                           >
-                            {lesson.checkpoints[currentCheckpointIndex].question}
+                            {formatMarkdown(lesson.checkpoints[currentCheckpointIndex].question)}
                           </ReactMarkdown>
                         </div>
                       </div>
 
                       {!checkpointFeedback ? (
                         <div className="space-y-4 relative">
-                          <MathKeyboard 
-                            isOpen={isKeyboardOpen}
-                            onClose={() => setIsKeyboardOpen(false)}
-                            onInsert={(sym) => {
-                              setUserAnswer(prev => prev + sym);
-                            }}
-                          />
                           <div className="relative">
                             <MathInput
                               value={userAnswer}
@@ -375,14 +505,8 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
                               placeholder="Your answer..."
                               className="w-full bg-white text-slate-900 border-2 border-white/20 rounded-[1.5rem] md:rounded-[2rem] focus-within:border-white transition-all"
                               onEnter={handleCheckpointSubmit}
+                              paddingRight="40px"
                             />
-                            <button
-                              onClick={() => setIsKeyboardOpen(!isKeyboardOpen)}
-                              className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 p-2 text-indigo-400 hover:text-indigo-600 bg-indigo-50 rounded-xl transition-colors z-10"
-                              title="Math Keyboard"
-                            >
-                              <PenTool size={20} />
-                            </button>
                           </div>
                           <button
                             onClick={handleCheckpointSubmit}
@@ -415,7 +539,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
                           
                           <div className="font-medium mb-6 leading-relaxed prose prose-invert prose-p:my-0">
                             <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                              {checkpointFeedback.message}
+                              {formatMarkdown(checkpointFeedback.message)}
                             </ReactMarkdown>
                           </div>
                           
@@ -423,7 +547,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
                             <div className="mb-8 p-4 bg-black/20 rounded-xl border border-white/10 text-xs font-bold flex gap-3 italic">
                               <Lightbulb size={16} className="text-indigo-300 shrink-0" />
                               <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                                {checkpointFeedback.improvement}
+                                {formatMarkdown(checkpointFeedback.improvement)}
                               </ReactMarkdown>
                             </div>
                           )}
@@ -437,13 +561,22 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
                         </motion.div>
                       )}
 
-                      <button 
-                        onClick={() => setShowCheckpoint(false)}
-                        className="flex items-center gap-2 text-indigo-200 hover:text-white transition-colors text-sm font-bold"
-                      >
-                        <RefreshCcw size={16} />
-                        Review Lesson Content
-                      </button>
+                      <div className="flex justify-between items-center mt-4">
+                        <button 
+                          onClick={prevCheckpoint}
+                          className="flex items-center gap-2 text-indigo-200 hover:text-white transition-colors text-sm font-bold"
+                        >
+                          <ChevronLeft size={16} />
+                          Back
+                        </button>
+                        <button 
+                          onClick={() => setShowCheckpoint(false)}
+                          className="flex items-center gap-2 text-indigo-200 hover:text-white transition-colors text-sm font-bold"
+                        >
+                          <RefreshCcw size={16} />
+                          Review Lesson Content
+                        </button>
+                      </div>
                    </div>
                 </motion.div>
               )}
@@ -540,6 +673,36 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
             </div>
           </div>
         </div>
+      )}
+
+      {showWhiteboard && (
+        <Whiteboard onClose={() => setShowWhiteboard(false)} />
+      )}
+
+      {lesson && (
+        <button
+          onClick={() => setShowWhiteboard(!showWhiteboard)}
+          className="fixed bottom-6 left-6 z-40 p-4 bg-slate-900 text-white rounded-2xl shadow-2xl hover:bg-slate-800 transition-all flex items-center gap-2"
+        >
+          <Pencil size={20} />
+          <span className="font-bold text-sm hidden md:inline">Open Scratchpad</span>
+        </button>
+      )}
+
+      {isFinished && (
+        <CelebrationOverlay 
+          xpEarned={150}
+          message={`You mastered the lesson on ${topic}! You've gained 100% completion.`}
+          onHome={handleBackToTopics}
+          onNext={() => {
+            setIsFinished(false);
+            setShowCheckpoint(false);
+            setCurrentCheckpointIndex(0);
+            setCurrentSectionIndex(0);
+            // Re-generate or restart
+            if (topic) startLesson(topic);
+          }}
+        />
       )}
     </div>
   );
