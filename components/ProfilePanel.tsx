@@ -75,7 +75,21 @@ const AchievementsModal: React.FC<{ isOpen: boolean, onClose: () => void, profil
 
         <div className="p-8 overflow-y-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {ACHIEVEMENTS.map(ach => {
+            {([...ACHIEVEMENTS].sort((a, b) => {
+              const unlockedA = profile.achievements.some(item => item.id === a.id);
+              const unlockedB = profile.achievements.some(item => item.id === b.id);
+              if (unlockedA !== unlockedB) return unlockedA ? -1 : 1;
+
+              if (unlockedA && unlockedB) {
+                const aData = profile.achievements.find(item => item.id === a.id);
+                const bData = profile.achievements.find(item => item.id === b.id);
+                return new Date(bData?.unlockedAt || 0).getTime() - new Date(aData?.unlockedAt || 0).getTime();
+              }
+
+              const progressA = Math.min(100, (a.currentValue(profile) / a.target) * 100);
+              const progressB = Math.min(100, (b.currentValue(profile) / b.target) * 100);
+              return progressB - progressA;
+            })).map(ach => {
               const unlocked = profile.achievements.some(a => a.id === ach.id);
               const unlockedData = profile.achievements.find(a => a.id === ach.id);
               const current = ach.currentValue(profile);

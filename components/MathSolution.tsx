@@ -214,7 +214,7 @@ export const MathSolution: React.FC<MathSolutionProps> = ({ result }) => {
                 <TTSButton text={activePart.explanation} />
               </div>
               
-              <div className="prose prose-slate dark:prose-invert max-w-none">
+              <div className="prose prose-invert max-w-none">
                 <ReactMarkdown
                   remarkPlugins={[remarkMath]}
                   rehypePlugins={[rehypeKatex]}

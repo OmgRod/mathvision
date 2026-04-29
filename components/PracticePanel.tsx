@@ -24,7 +24,7 @@ import {
 import { TTSButton } from './TTSButton';
 import { Whiteboard } from './Whiteboard';
 import { CelebrationOverlay } from './CelebrationOverlay';
-import { addXP, updateGenericStats, addCompletedTopic } from '../userService';
+import { addXP, updateGenericStats, addCompletedTopic, incrementHintsUsed, incrementWhiteboardOpens } from '../userService';
 import { checkAchievements } from '../achievementService';
 import { saveToHistory } from '../historyService';
 import { generateQuizQuestion, evaluateStep } from '../geminiService';
@@ -33,7 +33,17 @@ import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import { MathInput } from './MathInput';
-import { TOPIC_DATA, PRACTICE_TOPICS, MathTopic } from '../constants';
+import { TOPIC_DATA, PRACTICE_TOPICS, MathTopic, getTopicCategories, getTopicLevels, formatTopicLevel } from '../constants';
+
+const wrapMathIfNeeded = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return trimmed;
+  if (/\$/.test(trimmed)) return trimmed;
+  if (/\\[a-zA-Z]+/.test(trimmed) || /[\^_{}]/.test(trimmed)) {
+    return `$$${trimmed}$$`;
+  }
+  return trimmed;
+};
 
 export const PracticePanel: React.FC<{ initialData?: { topic: string, data: QuizQuestion } }> = ({ initialData }) => {
   const [topic, setTopic] = useState<string | null>(initialData?.topic || null);
@@ -55,15 +65,15 @@ export const PracticePanel: React.FC<{ initialData?: { topic: string, data: Quiz
   const [selectedLevel, setSelectedLevel] = useState<string>('All');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
-  const levels = useMemo<string[]>(() => ['All', ...Array.from(new Set(PRACTICE_TOPICS.map(t => t.level as string)))], []);
-  const categories = useMemo<string[]>(() => ['All', ...Array.from(new Set(PRACTICE_TOPICS.map(t => t.category as string)))], []);
+  const levels = useMemo<string[]>(() => ['All', ...Array.from(new Set(PRACTICE_TOPICS.flatMap(getTopicLevels)))], []);
+  const categories = useMemo<string[]>(() => ['All', ...Array.from(new Set(PRACTICE_TOPICS.flatMap(getTopicCategories)))], []);
 
   const filteredTopics = useMemo(() => {
     return PRACTICE_TOPICS.filter(t => {
       const matchesSearch = t.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                            t.description.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesLevel = selectedLevel === 'All' || t.level === selectedLevel;
-      const matchesCategory = selectedCategory === 'All' || t.category === selectedCategory;
+      const matchesLevel = selectedLevel === 'All' || getTopicLevels(t).includes(selectedLevel);
+      const matchesCategory = selectedCategory === 'All' || getTopicCategories(t).includes(selectedCategory);
       return matchesSearch && matchesLevel && matchesCategory;
     });
   }, [searchQuery, selectedLevel, selectedCategory]);
@@ -71,8 +81,10 @@ export const PracticePanel: React.FC<{ initialData?: { topic: string, data: Quiz
   const groupedTopics = useMemo(() => {
     const groups: { [key: string]: MathTopic[] } = {};
     filteredTopics.forEach(t => {
-      if (!groups[t.category]) groups[t.category] = [];
-      groups[t.category].push(t);
+      getTopicCategories(t).forEach(category => {
+        if (!groups[category]) groups[category] = [];
+        groups[category].push(t);
+      });
     });
     return groups;
   }, [filteredTopics]);
@@ -148,6 +160,8 @@ export const PracticePanel: React.FC<{ initialData?: { topic: string, data: Quiz
   const useHint = () => {
     if (!question) return;
     setHintsUsed(prev => prev + 1);
+    incrementHintsUsed();
+    checkAchievements();
     const hint = question.correctSteps[currentStepIndex].title;
     setFeedback({
       isCorrect: false,
@@ -251,7 +265,7 @@ export const PracticePanel: React.FC<{ initialData?: { topic: string, data: Quiz
                   >
                     <div className="space-y-2">
                       <div className="flex justify-between items-start">
-                        <span className="text-xs font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest">{t.level}</span>
+                        <span className="text-xs font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest">{formatTopicLevel(t)}</span>
                         <ChevronRight className="text-slate-200 dark:text-slate-700 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-all" size={20} />
                       </div>
                       <h4 className="text-lg font-black text-slate-800 dark:text-white">{t.name}</h4>
@@ -365,7 +379,7 @@ export const PracticePanel: React.FC<{ initialData?: { topic: string, data: Quiz
             </div>
             
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-              <div className="text-xl md:text-2xl font-black text-slate-900 dark:text-white prose prose-slate dark:prose-invert max-w-none flex-grow">
+              <div className="text-xl md:text-2xl font-black text-white prose prose-invert max-w-none flex-grow">
                 <ReactMarkdown
                   remarkPlugins={[remarkMath]}
                   rehypePlugins={[rehypeKatex]}
@@ -403,8 +417,13 @@ export const PracticePanel: React.FC<{ initialData?: { topic: string, data: Quiz
                         className="bg-slate-50 dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-1"
                       >
                         <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Step {idx + 1}: {cs.step.title}</div>
-                        <div className="font-mono text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 inline-block px-3 py-1 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm">
-                           {cs.answer}
+                        <div className="bg-slate-800 inline-block px-3 py-1 rounded-lg border border-slate-700 shadow-sm prose prose-invert prose-p:m-0 prose-code:text-indigo-400 prose-code:bg-transparent">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkMath]}
+                            rehypePlugins={[rehypeKatex]}
+                          >
+                            {wrapMathIfNeeded(cs.answer)}
+                          </ReactMarkdown>
                         </div>
                       </motion.div>
                     ))}
@@ -465,7 +484,7 @@ export const PracticePanel: React.FC<{ initialData?: { topic: string, data: Quiz
                       ) : (
                         <XCircle className="text-rose-500 dark:text-rose-400 shrink-0" />
                       )}
-                      <div className="flex-grow space-y-2 prose prose-sm prose-slate dark:prose-invert max-w-none">
+                      <div className="flex-grow space-y-2 prose prose-sm prose-invert max-w-none">
                         <div className={`font-bold ${feedback.isCorrect ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'} flex items-center justify-between gap-2`}>
                           <div className="flex-grow">
                             <ReactMarkdown
@@ -529,7 +548,13 @@ export const PracticePanel: React.FC<{ initialData?: { topic: string, data: Quiz
       )}
 
       <button
-        onClick={() => setShowWhiteboard(!showWhiteboard)}
+        onClick={() => {
+          if (!showWhiteboard) {
+            incrementWhiteboardOpens();
+            checkAchievements();
+          }
+          setShowWhiteboard(prev => !prev);
+        }}
         className="fixed bottom-6 left-6 z-40 p-4 bg-slate-900 text-white rounded-2xl shadow-2xl hover:bg-slate-800 transition-all flex items-center gap-2"
       >
         <Pencil size={20} />

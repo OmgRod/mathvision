@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { PRACTICE_TOPICS, TOPIC_DATA } from '../constants';
+import { PRACTICE_TOPICS, TOPIC_DATA, getTopicCategories, getTopicLevels, formatTopicLevel } from '../constants';
 import { Lesson, LessonSection, LessonQuestion, QuizFeedback } from '../types';
 import { generateLesson, askLessonClarification, evaluateLessonAnswer, generateTopicOutline } from '../geminiService';
 import { 
@@ -10,7 +10,7 @@ import {
 import { TTSButton } from './TTSButton';
 import { Whiteboard } from './Whiteboard';
 import { CelebrationOverlay } from './CelebrationOverlay';
-import { addXP, updateGenericStats, addMastery } from '../userService';
+import { addXP, updateGenericStats, addMastery, incrementWhiteboardOpens } from '../userService';
 import { checkAchievements } from '../achievementService';
 import { saveToHistory } from '../historyService';
 import { motion, AnimatePresence } from 'motion/react';
@@ -20,10 +20,17 @@ import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import { MathInput } from './MathInput';
 
-export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) => {
-  const [topic, setTopic] = useState<string | null>(initialData ? initialData.topic : null);
+export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; lastCheckpointIndex?: number; lessonLevel?: number } }> = ({ initialData }) => {
+  // Detect if this is a wrapped lesson with checkpoint data (new format) or plain lesson (old format)
+  const isWrappedFormat = initialData && typeof initialData === 'object' && 'lesson' in initialData;
+  const restoredLesson: Lesson | undefined = isWrappedFormat ? (initialData as any).lesson : (initialData as Lesson | undefined);
+  const restoredCheckpointIndex: number | undefined = isWrappedFormat ? (initialData as any).lastCheckpointIndex : undefined;
+  const restoredLessonLevel: number | undefined = isWrappedFormat ? (initialData as any).lessonLevel : undefined;
+  const hasInitialData = !!initialData;
+
+  const [topic, setTopic] = useState<string | null>(restoredLesson ? restoredLesson.topic : null);
   const [loading, setLoading] = useState(false);
-  const [lesson, setLesson] = useState<Lesson | null>(initialData || null);
+  const [lesson, setLesson] = useState<Lesson | null>(restoredLesson || null);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLevel, setSelectedLevel] = useState<string>('All');
@@ -43,24 +50,34 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
 
-  const levels = useMemo<string[]>(() => ['All', ...Array.from(new Set(PRACTICE_TOPICS.map(t => t.level as string)))], []);
-  const categories = useMemo<string[]>(() => ['All', ...Array.from(new Set(PRACTICE_TOPICS.map(t => t.category as string)))], []);
+  const levels = useMemo<string[]>(() => ['All', ...Array.from(new Set(PRACTICE_TOPICS.flatMap(getTopicLevels)))], []);
+  const categories = useMemo<string[]>(() => ['All', ...Array.from(new Set(PRACTICE_TOPICS.flatMap(getTopicCategories)))], []);
 
   const filteredTopics = useMemo(() => {
     return PRACTICE_TOPICS.filter(t => {
       const matchesSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           t.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesLevel = selectedLevel === 'All' || t.level === selectedLevel;
-      const matchesCategory = selectedCategory === 'All' || t.category === selectedCategory;
+      const matchesLevel = selectedLevel === 'All' || getTopicLevels(t).includes(selectedLevel);
+      const matchesCategory = selectedCategory === 'All' || getTopicCategories(t).includes(selectedCategory);
       return matchesSearch && matchesLevel && matchesCategory;
     });
   }, [searchTerm, selectedLevel, selectedCategory]);
 
   const [isFinished, setIsFinished] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'detail' | 'learning'>('list');
-  const [lessonLevel, setLessonLevel] = useState(1);
+  // If any initialData is provided, start in learning mode. Otherwise start in list mode.
+  const [viewMode, setViewMode] = useState<'list' | 'detail' | 'learning'>(hasInitialData ? 'learning' : 'list');
+  const [lessonLevel, setLessonLevel] = useState(restoredLessonLevel ?? 1);
   const [topicOutline, setTopicOutline] = useState<string[]>([]);
   const [outlineLoading, setOutlineLoading] = useState(false);
+
+  // If restoring from history with checkpoint data, jump to that checkpoint
+  useEffect(() => {
+    if (hasInitialData && restoredLesson && restoredCheckpointIndex !== undefined) {
+      setCurrentSectionIndex(restoredLesson.sections.length);
+      setShowCheckpoint(true);
+      setCurrentCheckpointIndex(restoredCheckpointIndex);
+    }
+  }, [hasInitialData, restoredLesson, restoredCheckpointIndex]);
 
   useEffect(() => {
     const handleRemoteLesson = (e: any) => {
@@ -94,7 +111,11 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
       try {
         const l = await generateLesson(selectedTopic, level);
         setLesson(l);
-        saveToHistory('lesson', selectedTopic, l);
+        saveToHistory('lesson', selectedTopic, {
+          lesson: l,
+          lastCheckpointIndex: 0,
+          lessonLevel: level
+        });
       } catch (err) {
         console.error(err);
         alert("Failed to load lesson. Please try again.");
@@ -112,7 +133,11 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
     try {
       const l = await generateLesson(topic, lessonLevel);
       setLesson(l);
-      saveToHistory('lesson', topic, l);
+      saveToHistory('lesson', topic, {
+        lesson: l,
+        lastCheckpointIndex: 0,
+        lessonLevel
+      });
     } catch (err) {
       console.error(err);
       alert("Failed to load lesson. Please try again.");
@@ -196,6 +221,12 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
   const nextCheckpoint = () => {
     if (!lesson) return;
     if (currentCheckpointIndex < lesson.checkpoints.length - 1) {
+      // Save current progress to history
+      saveToHistory('lesson', topic || lesson.topic, {
+        lesson,
+        lastCheckpointIndex: currentCheckpointIndex + 1,
+        lessonLevel
+      });
       setCurrentCheckpointIndex(prev => prev + 1);
       setUserAnswer('');
       setCheckpointFeedback(null);
@@ -206,6 +237,12 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
       if (topic) addMastery(topic);
       updateGenericStats({ totalTimeMinutes: 20 });
       checkAchievements();
+      // Save completed lesson to history
+      saveToHistory('lesson', topic || lesson.topic, {
+        lesson,
+        lastCheckpointIndex: lesson.checkpoints.length,
+        lessonLevel
+      });
       window.dispatchEvent(new Event('xp_updated'));
       setIsFinished(true);
     }
@@ -218,6 +255,14 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
       setCheckpointFeedback(null);
     } else {
       setShowCheckpoint(false);
+    }
+    // Save progress when going back
+    if (lesson) {
+      saveToHistory('lesson', topic || lesson.topic, {
+        lesson,
+        lastCheckpointIndex: Math.max(0, currentCheckpointIndex - 1),
+        lessonLevel
+      });
     }
   };
 
@@ -309,7 +354,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
                 >
                   <div className="absolute top-0 left-0 w-2 h-full bg-slate-100 dark:bg-slate-700 group-hover:bg-indigo-600 dark:group-hover:bg-indigo-500 transition-colors"></div>
                   <div className="flex justify-between items-start mb-6">
-                    <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 rounded-lg text-[10px] font-black uppercase tracking-widest">{t.level}</span>
+                    <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 rounded-lg text-[10px] font-black uppercase tracking-widest">{formatTopicLevel(t)}</span>
                     <ChevronRight className="text-slate-200 dark:text-slate-700 group-hover:text-indigo-600 dark:group-hover:text-indigo-400" size={20} />
                   </div>
                   <h4 className="text-xl font-black text-slate-900 dark:text-white mb-3 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors uppercase tracking-tight">{t.name}</h4>
@@ -346,7 +391,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
                <h1 className="text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-none uppercase">{topic}</h1>
                <div className="flex gap-3">
                  <span className="px-4 py-1.5 bg-indigo-600 dark:bg-indigo-500 text-white rounded-full text-xs font-black uppercase tracking-widest">Level {lessonLevel} Module</span>
-                 <span className="px-4 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-full text-xs font-black uppercase tracking-widest">{staticData?.level || 'Academic'} Mastery</span>
+                 <span className="px-4 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-full text-xs font-black uppercase tracking-widest">{staticData ? formatTopicLevel(staticData) : 'Academic'} Mastery</span>
                </div>
             </div>
 
@@ -487,7 +532,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
                     <TTSButton text={`${lesson.sections[currentSectionIndex].title}. ${lesson.sections[currentSectionIndex].content}`} />
                   </div>
 
-                  <div className="prose prose-slate dark:prose-invert max-w-none prose-p:text-slate-700 dark:prose-p:text-slate-300 prose-p:leading-relaxed prose-headings:font-black prose-strong:text-indigo-600 dark:prose-strong:text-indigo-400">
+                  <div className="prose prose-invert max-w-none prose-p:text-slate-200 prose-p:leading-relaxed prose-headings:font-black prose-strong:text-indigo-400">
                     <ReactMarkdown
                       remarkPlugins={[remarkMath]}
                       rehypePlugins={[rehypeKatex]}
@@ -730,7 +775,13 @@ export const LearnPanel: React.FC<{ initialData?: Lesson }> = ({ initialData }) 
 
       {lesson && (
         <button
-          onClick={() => setShowWhiteboard(!showWhiteboard)}
+          onClick={() => {
+            if (!showWhiteboard) {
+              incrementWhiteboardOpens();
+              checkAchievements();
+            }
+            setShowWhiteboard(prev => !prev);
+          }}
           className="fixed bottom-6 left-6 z-40 p-4 bg-slate-900 text-white rounded-2xl shadow-2xl hover:bg-slate-800 transition-all flex items-center gap-2"
         >
           <Pencil size={20} />

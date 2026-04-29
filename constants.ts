@@ -1,11 +1,21 @@
 
+export type TopicDimension = string | string[];
+
 export interface MathTopic {
   name: string;
-  category: string;
-  level: string;
+  category: TopicDimension;
+  level: TopicDimension;
   description: string;
   time?: string;
 }
+
+export const normalizeTopicDimension = (dimension: TopicDimension): string[] =>
+  Array.isArray(dimension) ? dimension : [dimension];
+
+export const getTopicLevels = (topic: MathTopic) => normalizeTopicDimension(topic.level);
+export const getTopicCategories = (topic: MathTopic) => normalizeTopicDimension(topic.category);
+export const formatTopicLevel = (topic: MathTopic) => getTopicLevels(topic).join(', ');
+export const formatTopicCategory = (topic: MathTopic) => getTopicCategories(topic).join(', ');
 
 /**
  * @deprecated Use PRACTICE_TOPICS as source of truth.
@@ -27,12 +37,12 @@ export const PRACTICE_TOPICS: MathTopic[] = [
   { name: "Mixed Numbers and Improper Fractions", category: "Arithmetic", level: "Middle School", description: "Converting between different fraction representations" },
   { name: "Percentage of an Amount", category: "Arithmetic", level: "Middle School", description: "Calculating 10%, 25%, 17.5%, etc." },
   { name: "FDP Conversions", category: "Arithmetic", level: "Middle School", description: "Converting between Fractions, Decimals, and Percentages" },
-  { name: "Recurring Decimals to Fractions", category: "Arithmetic", level: "GCSE Higher", description: "Algebraic proof for converting repeating decimals" },
+  { name: "Recurring Decimals to Fractions", category: "Arithmetic", level: ["GCSE Higher", "AQA GCSE Further Maths"], description: "Algebraic proof for converting repeating decimals" },
   { name: "Ratio Sharing", category: "Arithmetic", level: "Middle School", description: "Dividing quantities into parts" },
-  { name: "Direct Proportion", category: "Arithmetic", level: "Middle School", description: "Relating variables that grow at the same rate" },
+  { name: "Direct Proportion", category: "Arithmetic", level: ["Middle School", "AQA GCSE Further Maths"], description: "Relating variables that grow at the same rate" },
   { name: "Inverse Proportion", category: "Arithmetic", level: "GCSE", description: "Relating variables where one grows as the other shrinks" },
   { name: "Standard Form (Scientific Notation)", category: "Arithmetic", level: "GCSE", description: "Working with very large and very small numbers" },
-  { name: "Upper and Lower Bounds", category: "Arithmetic", level: "GCSE Higher", description: "Accuracy and error intervals for calculations" },
+  { name: "Upper and Lower Bounds", category: "Arithmetic", level: ["GCSE Higher", "AQA GCSE Further Maths"], description: "Accuracy and error intervals for calculations" },
   { name: "Product of Prime Factors", category: "Arithmetic", level: "Middle School", description: "Prime decomposition and factor trees" },
   { name: "HCF and LCM (Venn Diagrams)", category: "Arithmetic", level: "Middle School", description: "Finding common factors and multiples" },
 
@@ -47,7 +57,7 @@ export const PRACTICE_TOPICS: MathTopic[] = [
   { name: "Quadratic Graphs (Drawing)", category: "Algebra", level: "GCSE", description: "Plotting parabolas and identifying features" },
   { name: "Factoring Quadratics (a=1)", category: "Algebra", level: "GCSE", description: "Factoring trinomials like x^2 + 5x + 6" },
   { name: "Difference of Two Squares", category: "Algebra", level: "GCSE", description: "Factoring x^2 - y^2 patterns" },
-  { name: "Factoring Quadratics (a>1)", category: "Algebra", level: "GCSE Higher", description: "Advanced factoring using split-middle-term" },
+  { name: "Factoring Quadratics (a>1)", category: "Algebra", level: ["GCSE Higher", "AQA GCSE Further Maths"], description: "Advanced factoring using split-middle-term" },
   { name: "Solving Quadratics by Factoring", category: "Algebra", level: "GCSE", description: "Finding roots using the zero product property" },
   { name: "The Quadratic Formula", category: "Algebra", level: "High School", description: "Solving roots when integers don't work" },
   { name: "Completing the Square", category: "Algebra", level: "High School", description: "Converting to vertex form: (x-h)^2 + k" },
@@ -55,12 +65,12 @@ export const PRACTICE_TOPICS: MathTopic[] = [
   { name: "Algebraic Long Division", category: "Algebra", level: "A-Level", description: "Dividing polynomials of higher degrees" },
   { name: "The Factor Theorem", category: "Algebra", level: "A-Level", description: "Using division to find roots and factors" },
   { name: "The Remainder Theorem", category: "Algebra", level: "A-Level", description: "Determining remainders without full division" },
-  { name: "Binomial Expansion (Positive n)", category: "Algebra", level: "High School", description: "Expanding (a+b)^n for whole numbers" },
+  { name: "Binomial Expansion (Positive n)", category: "Algebra", level: ["High School", "AQA GCSE Further Maths"], description: "Expanding (a+b)^n for whole numbers" },
   { name: "Binomial Expansion (Negative/Fractional n)", category: "Algebra", level: "A-Level", description: "Infinite series expansions" },
   { name: "Partial Fractions: Distinct Roots", category: "Algebra", level: "A-Level", description: "Splitting fractions with different linear factors" },
   { name: "Partial Fractions: Repeated Roots", category: "Algebra", level: "A-Level", description: "Splitting fractions with squaring factors" },
-  { name: "Laws of Logarithms", category: "Algebra", level: "High School", description: "Log addition, subtraction, and power rules" },
-  { name: "Change of Base (Logs)", category: "Algebra", level: "A-Level", description: "Switching between log bases for solving" },
+  { name: "Laws of Logarithms", category: "Algebra", level: ["High School", "AQA GCSE Further Maths"], description: "Log addition, subtraction, and power rules" },
+  { name: "Change of Base (Logs)", category: "Algebra", level: ["A-Level", "AQA GCSE Further Maths"], description: "Switching between log bases for solving" },
   { name: "Natural Logarithms (ln x)", category: "Algebra", level: "A-Level", description: "Solving equations involving e^x" },
   { name: "The Discriminant (b^2 - 4ac)", category: "Algebra", level: "A-Level", description: "Predicting the number of real roots" },
   { name: "Solving Cubic Equations", category: "Algebra", level: "Advanced", description: "Methods for finding roots of grade 3 polynomials" },
@@ -77,10 +87,10 @@ export const PRACTICE_TOPICS: MathTopic[] = [
   { name: "Implicit Differentiation", category: "Calculus", level: "A-Level", description: "Equations where y is not isolated" },
   { name: "Parametric Differentiation", category: "Calculus", level: "A-Level", description: "Working with t as a separate parameter" },
   { name: "Second Derivatives and Convexity", category: "Calculus", level: "A-Level", description: "Finding points of inflection" },
-  { name: "Stationary Points (Max/Min)", category: "Calculus", level: "High School", description: "Optimization using derivatives" },
+  { name: "Stationary Points (Max/Min)", category: "Calculus", level: ["High School", "AQA GCSE Further Maths"], description: "Optimization using derivatives" },
   { name: "Differentiation from First Principles", category: "Calculus", level: "A-Level", description: "Proving derivatives using limits" },
-  { name: "Integration: Fundamentals", category: "Calculus", level: "High School", description: "Anti-derivatives and constants of integration" },
-  { name: "Definite Integrals (Area Under Curve)", category: "Calculus", level: "High School", description: "Evaluating area between boundaries" },
+  { name: "Integration: Fundamentals", category: "Calculus", level: ["High School", "AQA GCSE Further Maths"], description: "Anti-derivatives and constants of integration" },
+  { name: "Definite Integrals (Area Under Curve)", category: "Calculus", level: ["High School", "AQA GCSE Further Maths"], description: "Evaluating area between boundaries" },
   { name: "Integration by Substitution", category: "Calculus", level: "A-Level", description: "Reverse chain rule using u-variable" },
   { name: "Integration by Parts", category: "Calculus", level: "A-Level", description: "Integrating products of functions" },
   { name: "Integration by Partial Fractions", category: "Calculus", level: "A-Level", description: "Using algebraic splits for easy integration" },
@@ -108,10 +118,10 @@ export const PRACTICE_TOPICS: MathTopic[] = [
   { name: "Pythagoras' Theorem (2D)", category: "Geometry", level: "Middle School", description: "Relationship between sides in right triangles" },
   { name: "Pythagoras' Theorem (3D)", category: "Geometry", level: "GCSE Higher", description: "Finding diagonals in prisms and pyramids" },
   { name: "Right-Angled Trig (SOH CAH TOA)", category: "Trigonometry", level: "GCSE", description: "Calculating missing sides and angles" },
-  { name: "Sine Rule (Sides and Angles)", category: "Trigonometry", level: "GCSE Higher", description: "Law of Sines for non-right triangles" },
-  { name: "Cosine Rule (Sides and Angles)", category: "Trigonometry", level: "GCSE Higher", description: "Law of Cosines for any triangle" },
+  { name: "Sine Rule (Sides and Angles)", category: "Trigonometry", level: ["GCSE Higher", "AQA GCSE Further Maths"], description: "Law of Sines for non-right triangles" },
+  { name: "Cosine Rule (Sides and Angles)", category: "Trigonometry", level: ["GCSE Higher", "AQA GCSE Further Maths"], description: "Law of Cosines for any triangle" },
   { name: "Area of a Triangle (1/2 ab sin C)", category: "Trigonometry", level: "GCSE Higher", description: "Finding area using two sides and angle" },
-  { name: "Circle Theorems: Angle at Center", category: "Geometry", level: "GCSE Higher", description: "Centre vs circumference theorems" },
+  { name: "Circle Theorems: Angle at Center", category: "Geometry", level: ["GCSE Higher", "AQA GCSE Further Maths"], description: "Centre vs circumference theorems" },
   { name: "Circle Theorems: Cyclic Quadrilaterals", category: "Geometry", level: "GCSE Higher", description: "Opposite angles summing to 180" },
   { name: "Circle Theorems: Alternate Segment", category: "Geometry", level: "GCSE Higher", description: "Tangents and chords relationships" },
   { name: "3D Coordinates", category: "Geometry", level: "High School", description: "Working with (x, y, z) axes" },
@@ -120,20 +130,20 @@ export const PRACTICE_TOPICS: MathTopic[] = [
   { name: "Small Angle Approximations", category: "Trigonometry", level: "A-Level", description: "Simplifying trig when theta is near 0" },
   { name: "Double Angle Formulae", category: "Trigonometry", level: "A-Level", description: "Sin(2x) and Cos(2x) expansions" },
   { name: "Trigonometric Identities (Pythagorean)", category: "Trigonometry", level: "A-Level", description: "Proving expressions using sin^2 + cos^2 = 1" },
-  { name: "Vector Geometry in 3D", category: "Vectors", level: "A-Level", description: "Lines and planes in vector space" },
+  { name: "Vector Geometry in 3D", category: ["Vectors", "Geometry"], level: "A-Level", description: "Lines and planes in vector space" },
   { name: "Dot Product and Scalar Product", category: "Vectors", level: "University", description: "Finding angles between vector lines" },
 
   // --- STATISTICS & PROBABILITY ---
-  { name: "Mean, Median, and Mode", category: "Statistics", level: "Primary", description: "Basic central tendencies" },
+  { name: "Mean, Median, and Mode", category: ["Statistics", "AQA GCSE Further Maths"], level: "Primary", description: "Basic central tendencies" },
   { name: "Range and Interquartile Range", category: "Statistics", level: "Middle School", description: "Measures of spread" },
   { name: "Box and Whisker Plots", category: "Statistics", level: "GCSE", description: "Visualizing five-number summaries" },
   { name: "Scatter Graphs and Correlation", category: "Statistics", level: "Middle School", description: "Trend lines and relationship types" },
-  { name: "Probability Trees (Independent)", category: "Probability", level: "GCSE", description: "Successive events with fixed odds" },
-  { name: "Conditional Probability (Dependent)", category: "Probability", level: "GCSE Higher", description: "Odds that change based on previous outcomes" },
+  { name: "Probability Trees (Independent)", category: ["Probability", "Statistics"], level: ["GCSE", "AQA GCSE Further Maths"], description: "Successive events with fixed odds" },
+  { name: "Conditional Probability (Dependent)", category: ["Probability", "Statistics"], level: ["GCSE Higher", "AQA GCSE Further Maths"], description: "Odds that change based on previous outcomes" },
   { name: "Venn Diagrams for Probability", category: "Probability", level: "GCSE Higher", description: "Union, intersection, and complement" },
   { name: "Cumulative Frequency Curves", category: "Statistics", level: "GCSE Higher", description: "Estimating medians from curves" },
   { name: "Histograms (Frequency Density)", category: "Statistics", level: "GCSE Higher", description: "Continuous data with unequal width bars" },
-  { name: "Factorials (n!)", category: "Combinatorics", level: "High School", description: "Basic counting principles and multiplication" },
+  { name: "Factorials (n!)", category: ["Combinatorics", "Probability"], level: "High School", description: "Basic counting principles and multiplication" },
   { name: "Permutations (nPr)", category: "Combinatorics", level: "High School", description: "Ordered arrangements" },
   { name: "Combinations (nCr)", category: "Combinatorics", level: "High School", description: "Unordered selections" },
   { name: "The Binomial Distribution", category: "Statistics", level: "A-Level", description: "Discrete success/failure modeling" },
@@ -159,11 +169,11 @@ export const PRACTICE_TOPICS: MathTopic[] = [
   { name: "Mathematical Induction Proofs", category: "Logic", level: "A-Level / Uni", description: "Recursive proofs for all integers n" },
 
   // --- MATRICES & LINEAR ALGEBRA ---
-  { name: "Intro to Matrices (Addition/Subtraction)", category: "Matrices", level: "GCSE Higher", description: "Basic matrix size and operations" },
-  { name: "Matrix Multiplication (2x2)", category: "Matrices", level: "GCSE Higher", description: "Dot products of rows and columns" },
+  { name: "Intro to Matrices (Addition/Subtraction)", category: ["Matrices", "Algebra"], level: ["GCSE Higher", "AQA GCSE Further Maths"], description: "Basic matrix size and operations" },
+  { name: "Matrix Multiplication (2x2)", category: ["Matrices", "Computing"], level: ["GCSE Higher", "AQA GCSE Further Maths"], description: "Dot products of rows and columns" },
   { name: "Determinant of 2x2 and 3x3 Matrices", category: "Matrices", level: "A-Level", description: "Calculating the 'volume' factor" },
   { name: "Inverse of 2x2 Matrices", category: "Matrices", level: "A-Level", description: "Solving AX=B problems" },
-  { name: "2D Transformations (Rotation/Reflections)", category: "Matrices", level: "GCSE Higher", description: "Using matrices to warp shapes" },
+  { name: "2D Transformations (Rotation/Reflections)", category: "Matrices", level: ["GCSE Higher", "AQA GCSE Further Maths"], description: "Using matrices to warp shapes" },
   { name: "Gaussian Elimination", category: "Linear Algebra", level: "University", description: "Solving large systems of equations" },
   { name: "Eigenvalues and Eigenvectors", category: "Linear Algebra", level: "University", description: "Finding characteristic vectors" },
   { name: "Vector Spaces and Bases", category: "Linear Algebra", level: "University", description: "Dimension and spanning sets" },
@@ -383,7 +393,7 @@ export const PRACTICE_TOPICS: MathTopic[] = [
   // --- ARITHMETIC & NUMBER ---
   { name: "Product Rule for Counting", category: "Arithmetic", level: "GCSE", description: "Calculating total outcomes using multiplication" },
   { name: "Estimating Mean from Grouped Data", category: "Statistics", level: "GCSE", description: "Using midpoints to approximate averages" },
-  { name: "Standard Form with Negative Indices", category: "Arithmetic", level: "GCSE", description: "Handling tiny numbers like 0.00034" },
+  { name: "Standard Form with Negative Indices", category: "Arithmetic", level: ["GCSE", "AQA GCSE Further Maths"], description: "Handling tiny numbers like 0.00034" },
   { name: "Venn Diagrams: Shading Sets", category: "Logic", level: "GCSE Higher", description: "Representing A ∩ B, A ∪ B', etc." },
   { name: "Set Notation Basics", category: "Logic", level: "High School", description: "Universal sets, elements, and empty sets" },
   
@@ -410,12 +420,12 @@ export const PRACTICE_TOPICS: MathTopic[] = [
   // --- STATISTICS ---
   { name: "Sampling Methods: Stratified & Systematic", category: "Statistics", level: "GCSE", description: "Collecting unbiased data sets" },
   { name: "Stem and Leaf Diagrams", category: "Statistics", level: "Middle School", description: "Organizing raw data for analysis" },
-  { name: "Probability: Combined Events", category: "Probability", level: "GCSE", description: "P(A and B) vs P(A or B)" },
+  { name: "Probability: Combined Events", category: ["Probability", "Statistics"], level: ["GCSE", "AQA GCSE Further Maths"], description: "P(A and B) vs P(A or B)" },
   { name: "Standard Deviation calculation", category: "Statistics", level: "A-Level", description: "Mathematical measure of data spread" },
   { name: "PMCC: Product Moment Correlation Coefficient", category: "Statistics", level: "A-Level", description: "Numeric measure of linear correlation" },
   
   // --- FURTHER MATHS GCSE specific ---
-  { name: "Differentiation: Stationary Points", category: "Calculus", level: "GCSE Higher", description: "Finding and classifying turning points" },
+  { name: "Differentiation: Stationary Points", category: "Calculus", level: ["GCSE Higher", "AQA GCSE Further Maths"], description: "Finding and classifying turning points" },
   { name: "Proof: Algebraic Proof", category: "Algebra", level: "GCSE", description: "Proving odd/even results algebraically" },
 
   // --- FINAL COMPREHENSIVE CURRICULUM EXPANSION ---
@@ -451,7 +461,6 @@ export const PRACTICE_TOPICS: MathTopic[] = [
   { name: "Calculus: Implicit Differentiation", category: "Calculus", level: "A-Level", description: "Differentiating equations like x² + y² = 25" },
   { name: "Parametric Equations: Motion", category: "Calculus", level: "A-Level", description: "Defining curves with a hidden variable t" },
   { name: "Probability: Normal Distribution", category: "Statistics", level: "A-Level", description: "The bell curve and Z-scores" },
-  { name: "Hypothesis Testing: Binomial", category: "Statistics", level: "A-Level", description: "Testing significance in discrete trials" },
   
   // --- LOGIC & SETS DEPTH ---
   { name: "Boolean Algebra: De Morgan’s Laws", category: "Logic", level: "GCSE / A-Level", description: "Negating conjunctions and disjunctions" },
@@ -461,5 +470,35 @@ export const PRACTICE_TOPICS: MathTopic[] = [
   // --- FURTHER MISC ---
   { name: "Fractals: Koch Snowflake", category: "Geometry", level: "High School", description: "Iterative perimeter expansion" },
   { name: "Chaos: The Logistic Map", category: "Analysis", level: "University", description: "Bifurcation and population models" },
-  { name: "Graph Theory: Dijkstra's Algorithm", category: "Computing", level: "University", description: "Finding the shortest path in weights" }
+  { name: "Graph Theory: Dijkstra's Algorithm", category: "Computing", level: "University", description: "Finding the shortest path in weights" },
+
+  { "name": "Basic Measurement and Units", "category": "Physics", "level": "Primary", "description": "Using rulers, scales, and clocks; understanding length, mass, time, and simple unit conversions" },
+  { "name": "Simple Graphs", "category": "Science", "level": "Primary", "description": "Plotting basic bar charts and line graphs from observations" },
+
+  { "name": "Speed = Distance / Time", "category": "Physics", "level": "Middle School", "description": "Calculating speed and rearranging the formula for distance and time" },
+  { "name": "Density Calculations", "category": "Physics", "level": "Middle School", "description": "Using density = mass / volume and solving simple problems" },
+  { "name": "Temperature and Energy Changes", "category": "Chemistry", "level": "Middle School", "description": "Reading thermometers and basic interpretation of heating graphs" },
+
+  { "name": "Forces and Acceleration", "category": "Physics", "level": "GCSE", "description": "Using F = ma and interpreting motion graphs (velocity-time, distance-time)" },
+  { "name": "Energy Calculations", "category": "Physics", "level": "GCSE", "description": "Kinetic and potential energy calculations and efficiency formulas" },
+  { "name": "Electric Circuits Calculations", "category": "Physics", "level": "GCSE", "description": "Using V = IR and power equations in circuits" },
+  { "name": "Moles and Stoichiometry", "category": "Chemistry", "level": "GCSE", "description": "Calculating amounts of substances using molar mass and balanced equations" },
+  { "name": "Radioactivity and Half-Life", "category": "Physics", "level": "GCSE", "description": "Understanding exponential decay and half-life calculations" },
+
+  { "name": "Trigonometry in Physics", "category": "Physics", "level": "GCSE Higher", "description": "Resolving forces and using sine/cosine in vector problems" },
+  { "name": "Gas Laws", "category": "Chemistry", "level": "GCSE Higher", "description": "Relationships between pressure, volume, and temperature using proportional reasoning" },
+  { "name": "Gradient and Area in Graphs", "category": "Physics", "level": "GCSE Higher", "description": "Using gradients for acceleration and area under graphs for distance" },
+
+  { "name": "SUVAT Equations", "category": "Physics", "level": "A-Level", "description": "Using kinematic equations for motion with constant acceleration" },
+  { "name": "Exponentials in Radioactive Decay", "category": "Physics", "level": "A-Level", "description": "Using exponential functions and logarithms to model decay" },
+  { "name": "Enthalpy Calculations", "category": "Chemistry", "level": "A-Level", "description": "Bond energies and Hess's Law calculations" },
+  { "name": "Equilibrium Constants (Kc)", "category": "Chemistry", "level": "A-Level", "description": "Writing and solving equilibrium expressions mathematically" },
+  { "name": "Statistical Analysis in Biology", "category": "Biology", "level": "A-Level", "description": "Using standard deviation and significance tests (e.g. t-test)" },
+
+  { "name": "Calculus in Motion", "category": "Physics", "level": "University", "description": "Using derivatives and integrals to model velocity and acceleration" },
+  { "name": "Differential Equations in Physics", "category": "Physics", "level": "University", "description": "Modelling systems like oscillations and circuits with differential equations" },
+  { "name": "Quantum Mechanics Mathematics", "category": "Physics", "level": "University", "description": "Wavefunctions, operators, and linear algebra in quantum systems" },
+  { "name": "Thermodynamics and Statistical Mechanics", "category": "Physics", "level": "University", "description": "Probability distributions and energy states" },
+  { "name": "Reaction Kinetics Modelling", "category": "Chemistry", "level": "University", "description": "Rate equations, orders of reaction, and integrated rate laws" },
+  { "name": "Biostatistics and Modelling", "category": "Biology", "level": "University", "description": "Mathematical modelling of populations and biological systems" }
 ];

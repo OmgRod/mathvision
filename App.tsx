@@ -13,7 +13,7 @@ import { HelpModal } from './components/HelpModal';
 import { ProcessingState, HistoryItem } from './types';
 import { solveMathEquation } from './geminiService';
 import { saveToHistory } from './historyService';
-import { updateGenericStats } from './userService';
+import { updateGenericStats, incrementHelpOpened, incrementPhotoInputsUsed } from './userService';
 import { checkAchievements } from './achievementService';
 import { Loader2, Trash2, RefreshCw, Camera, AlertCircle, Sparkles, BookOpen, PenTool, Brain, GraduationCap, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -21,23 +21,11 @@ import { motion, AnimatePresence } from 'motion/react';
 const App: React.FC = () => {
   const [mode, setMode] = useState<'solver' | 'practice' | 'learn' | 'history' | 'profile'>('solver');
   const [image, setImage] = useState<string | null>(null);
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('theme');
-      if (saved === 'light' || saved === 'dark') return saved;
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-    return 'light';
-  });
 
+  // Force dark mode
   useEffect(() => {
-    const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(theme);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
+    document.documentElement.classList.add('dark');
+  }, []);
 
   React.useEffect(() => {
     const handleXPNavigate = () => setMode('profile');
@@ -72,7 +60,11 @@ const App: React.FC = () => {
       setToast({ achievement: e.detail });
       setTimeout(() => setToast(null), 5000);
     };
-    const handleShowHelp = () => setShowHelp(true);
+    const handleShowHelp = () => {
+      incrementHelpOpened();
+      checkAchievements();
+      setShowHelp(true);
+    };
     
     window.addEventListener('achievement_unlocked', handleAchievement);
     window.addEventListener('show_help', handleShowHelp);
@@ -101,6 +93,7 @@ const App: React.FC = () => {
       setPreLoadedPractice({ topic: item.topic, data: item.data });
       setMode('practice');
     } else if (item.type === 'lesson') {
+      // For lessons, check if the data contains checkpoint progress info
       setPreLoadedLesson(item.data);
       setMode('learn');
     }
@@ -110,6 +103,7 @@ const App: React.FC = () => {
     setImage(base64);
     setMimeType(type);
     setState({ isProcessing: false, error: null, result: null });
+    incrementPhotoInputsUsed();
   };
 
   const clearInput = () => {
@@ -150,8 +144,8 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#fdfdfd] dark:bg-[#0f172a] transition-colors duration-300">
-      <Header theme={theme} onToggleTheme={toggleTheme} />
+    <div className="min-h-screen flex flex-col bg-[#0f172a]">
+      <Header />
 
       {/* Mode Switcher */}
       <div className="container mx-auto px-4 mt-8 flex justify-center overflow-x-auto no-scrollbar pb-2">

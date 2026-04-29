@@ -1,34 +1,33 @@
-@import "tailwindcss";
-
-@theme {
+:root {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --background: 0 0% 100%;
+  --foreground: 224 71.4% 4.1%;
+  --card: 0 0% 100%;
+  --card-foreground: 224 71.4% 4.1%;
+  --secondary: 220 14.3% 95.9%;
+  --border: 220 13% 91%;
 }
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 224 71.4% 4.1%;
-    --card: 0 0% 100%;
-    --card-foreground: 224 71.4% 4.1%;
-    --secondary: 220 14.3% 95.9%;
-    --border: 220 13% 91%;
-  }
-
-  .dark {
-    --background: 224 71.4% 4.1%;
-    --foreground: 210 20% 98%;
-    --card: 224 71.4% 4.1%;
-    --card-foreground: 210 20% 98%;
-    --secondary: 215 27.9% 16.9%;
-    --border: 215 27.9% 16.9%;
-  }
+.dark {
+  --background: 224 71.4% 4.1%;
+  --foreground: 210 20% 98%;
+  --card: 224 71.4% 4.1%;
+  --card-foreground: 210 20% 98%;
+  --secondary: 215 27.9% 16.9%;
+  --border: 215 27.9% 16.9%;
 }
 
-@layer base {
-  body {
-    @apply bg-white dark:bg-[#0f172a] text-slate-900 dark:text-slate-100 transition-colors duration-300;
-  }
+body {
+  font-family: var(--font-sans);
+  background-color: #f8fafc;
+  color: #0f172a;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dark body {
+  background-color: #0f172a;
+  color: #f8fafc;
 }
 
 .math-field-container {
@@ -67,28 +66,4 @@ math-field::part(virtual-keyboard-toggle) {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
-}
-
-.dark .bg-slate-50 {
-  @apply bg-slate-900/50;
-}
-
-.dark .bg-white {
-  @apply bg-slate-800;
-}
-
-.dark .border-slate-100 {
-  @apply border-slate-700;
-}
-
-.dark .text-slate-900 {
-  @apply text-slate-100;
-}
-
-.dark .text-slate-600 {
-  @apply text-slate-400;
-}
-
-.dark .text-slate-500 {
-  @apply text-slate-400;
 }

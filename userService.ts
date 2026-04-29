@@ -14,6 +14,10 @@ export interface UserProfile {
   totalTimeMinutes: number;
   achievements: Achievement[];
   totalQuestionsSolved: number;
+  hintsUsedTotal: number;
+  whiteboardOpens: number;
+  helpOpenedCount: number;
+  photoInputsUsed: number;
 }
 
 const STORAGE_KEY = 'mathvision_user_profile';
@@ -29,7 +33,11 @@ export const getUserProfile = (): UserProfile => {
     lastActive: null,
     totalTimeMinutes: 0,
     achievements: [],
-    totalQuestionsSolved: 0
+    totalQuestionsSolved: 0,
+    hintsUsedTotal: 0,
+    whiteboardOpens: 0,
+    helpOpenedCount: 0,
+    photoInputsUsed: 0
   };
 
   if (stored) {
@@ -98,5 +106,33 @@ export const addCompletedTopic = (topic: string) => {
     profile.completedTopics.push(topic);
     saveUserProfile(profile);
   }
+  return profile;
+};
+
+export const incrementHintsUsed = () => {
+  const profile = getUserProfile();
+  profile.hintsUsedTotal += 1;
+  saveUserProfile(profile);
+  return profile;
+};
+
+export const incrementWhiteboardOpens = () => {
+  const profile = getUserProfile();
+  profile.whiteboardOpens += 1;
+  saveUserProfile(profile);
+  return profile;
+};
+
+export const incrementHelpOpened = () => {
+  const profile = getUserProfile();
+  profile.helpOpenedCount += 1;
+  saveUserProfile(profile);
+  return profile;
+};
+
+export const incrementPhotoInputsUsed = () => {
+  const profile = getUserProfile();
+  profile.photoInputsUsed += 1;
+  saveUserProfile(profile);
   return profile;
 };

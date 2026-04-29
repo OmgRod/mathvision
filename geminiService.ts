@@ -2,7 +2,40 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { MathResult, QuizQuestion, QuizFeedback, Lesson } from "./types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+
+// List of models to try in order of preference
+const MODELS = [
+  'gemini-3-flash-preview',
+  'gemini-3.1-pro-preview',
+  'gemini-3.1-flash-lite-preview',
+  'gemini-2.5-flash',
+
+];
+
+// Helper function to try models in sequence
+async function tryModels(contents: any, config: any): Promise<any> {
+  for (const model of MODELS) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents,
+        config
+      });
+      return response;
+    } catch (error: any) {
+      console.warn(`Model ${model} failed:`, error.message);
+      // If it's a 429 (rate limit), try next model
+      if (error.status === 429 || error.message?.includes('429') || error.message?.includes('rate limit')) {
+        continue;
+      }
+      // For other errors, still try next model as fallback
+      continue;
+    }
+  }
+  // If all models fail, throw the last error
+  throw new Error("All models failed. Please try again later.");
+}
 
 export const solveMathEquation = async (input: { image?: string; text?: string; mimeType?: string }): Promise<MathResult> => {
   const prompt = `
@@ -32,42 +65,38 @@ export const solveMathEquation = async (input: { image?: string; text?: string; 
       });
     }
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: { parts },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            parts: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  partId: { type: Type.STRING, description: "Identifier like '1' or '2a'" },
-                  title: { type: Type.STRING },
-                  finalAnswer: { type: Type.STRING },
-                  explanation: { type: Type.STRING },
-                  steps: {
-                    type: Type.ARRAY,
-                    items: {
-                      type: Type.OBJECT,
-                      properties: {
-                        title: { type: Type.STRING },
-                        math: { type: Type.STRING },
-                        diagramSvg: { type: Type.STRING, description: "Minimal SVG string if applicable" }
-                      },
-                      required: ["title", "math"]
-                    }
+    const response = await tryModels({ parts }, {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          parts: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                partId: { type: Type.STRING, description: "Identifier like '1' or '2a'" },
+                title: { type: Type.STRING },
+                finalAnswer: { type: Type.STRING },
+                explanation: { type: Type.STRING },
+                steps: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      title: { type: Type.STRING },
+                      math: { type: Type.STRING },
+                      diagramSvg: { type: Type.STRING, description: "Minimal SVG string if applicable" }
+                    },
+                    required: ["title", "math"]
                   }
-                },
-                required: ["partId", "finalAnswer", "explanation", "steps"]
-              }
+                }
+              },
+              required: ["partId", "finalAnswer", "explanation", "steps"]
             }
-          },
-          required: ["parts"]
-        }
+          }
+        },
+        required: ["parts"]
       }
     });
 
@@ -106,31 +135,27 @@ export const generateQuizQuestion = async (topic: string): Promise<QuizQuestion>
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: { parts: [{ text: prompt }] },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            question: { type: Type.STRING },
-            diagramSvg: { type: Type.STRING },
-            finalAnswer: { type: Type.STRING },
-            correctSteps: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  title: { type: Type.STRING },
-                  math: { type: Type.STRING }
-                },
-                required: ["title", "math"]
-              }
+    const response = await tryModels({ parts: [{ text: prompt }] }, {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          question: { type: Type.STRING },
+          diagramSvg: { type: Type.STRING },
+          finalAnswer: { type: Type.STRING },
+          correctSteps: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                title: { type: Type.STRING },
+                math: { type: Type.STRING }
+              },
+              required: ["title", "math"]
             }
-          },
-          required: ["question", "finalAnswer", "correctSteps"]
-        }
+          }
+        },
+        required: ["question", "finalAnswer", "correctSteps"]
       }
     });
 
@@ -167,21 +192,17 @@ export const evaluateStep = async (question: string, expectedMath: string, userM
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: { parts: [{ text: prompt }] },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            isCorrect: { type: Type.BOOLEAN },
-            isFinalAnswer: { type: Type.BOOLEAN },
-            message: { type: Type.STRING },
-            improvement: { type: Type.STRING }
-          },
-          required: ["isCorrect", "message"]
-        }
+    const response = await tryModels({ parts: [{ text: prompt }] }, {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          isCorrect: { type: Type.BOOLEAN },
+          isFinalAnswer: { type: Type.BOOLEAN },
+          message: { type: Type.STRING },
+          improvement: { type: Type.STRING }
+        },
+        required: ["isCorrect", "message"]
       }
     });
 
@@ -216,43 +237,39 @@ export const generateLesson = async (topic: string, level: number = 1): Promise<
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: { parts: [{ text: prompt }] },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            description: { type: Type.STRING },
-            outline: { type: Type.ARRAY, items: { type: Type.STRING } },
-            sections: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  title: { type: Type.STRING },
-                  content: { type: Type.STRING },
-                  diagramSvg: { type: Type.STRING, description: "SVG string for geometric concepts" }
-                },
-                required: ["title", "content"]
-              }
-            },
-            checkpoints: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  question: { type: Type.STRING },
-                  correctAnswer: { type: Type.STRING },
-                  explanation: { type: Type.STRING }
-                },
-                required: ["question", "correctAnswer", "explanation"]
-              }
+    const response = await tryModels({ parts: [{ text: prompt }] }, {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          description: { type: Type.STRING },
+          outline: { type: Type.ARRAY, items: { type: Type.STRING } },
+          sections: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                title: { type: Type.STRING },
+                content: { type: Type.STRING },
+                diagramSvg: { type: Type.STRING, description: "SVG string for geometric concepts" }
+              },
+              required: ["title", "content"]
             }
           },
-          required: ["description", "outline", "sections", "checkpoints"]
-        }
+          checkpoints: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                question: { type: Type.STRING },
+                correctAnswer: { type: Type.STRING },
+                explanation: { type: Type.STRING }
+              },
+              required: ["question", "correctAnswer", "explanation"]
+            }
+          }
+        },
+        required: ["description", "outline", "sections", "checkpoints"]
       }
     });
 
@@ -283,20 +300,16 @@ export const evaluateLessonAnswer = async (topic: string, question: string, user
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: { parts: [{ text: prompt }] },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            isCorrect: { type: Type.BOOLEAN },
-            message: { type: Type.STRING },
-            improvement: { type: Type.STRING }
-          },
-          required: ["isCorrect", "message"]
-        }
+    const response = await tryModels({ parts: [{ text: prompt }] }, {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          isCorrect: { type: Type.BOOLEAN },
+          message: { type: Type.STRING },
+          improvement: { type: Type.STRING }
+        },
+        required: ["isCorrect", "message"]
       }
     });
 
@@ -316,15 +329,11 @@ export const generateTopicOutline = async (topic: string, level: number): Promis
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: { parts: [{ text: prompt }] },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          items: { type: Type.STRING }
-        }
+    const response = await tryModels({ parts: [{ text: prompt }] }, {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.ARRAY,
+        items: { type: Type.STRING }
       }
     });
     return JSON.parse(response.text?.trim() || "[]");
@@ -349,13 +358,156 @@ export const askLessonClarification = async (topic: string, question: string, co
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: { parts: [{ text: prompt }] }
-    });
+    const response = await tryModels({ parts: [{ text: prompt }] }, {});
     return response.text?.trim() || "I'm sorry, I'm having trouble connecting to my brain right now. Please try again!";
   } catch (error) {
     console.error("Clarification Error:", error);
     return "I'm sorry, I'm having trouble connecting to my brain right now. Please try again!";
+  }
+};
+
+export const generateSpeech = async (text: string): Promise<string> => {
+  // Clean text from LaTeX and Markdown for better speech
+  const cleanLaTeX = (str: string) => {
+    return str
+      .replace(/\\text\{(.*?)\}/g, '$1')
+      .replace(/\\mathrm\{(.*?)\}/g, '$1')
+      .replace(/\\mathbf\{(.*?)\}/g, '$1')
+      .replace(/\\mathit\{(.*?)\}/g, '$1')
+      .replace(/\\mathtt\{(.*?)\}/g, '$1')
+      .replace(/\\mathsf\{(.*?)\}/g, '$1')
+      .replace(/\\frac\{(.*?)\}\{(.*?)\}/g, '$1 divided by $2')
+      .replace(/\\sqrt\{(.*?)\}/g, 'square root of $1')
+      .replace(/\\sqrt\[(.*?)\]\{(.*?)\}/g, '$1 root of $2')
+      .replace(/\^\{(.*?)\}/g, ' to the power of $1')
+      .replace(/\^\\circ/g, ' degrees ')
+      .replace(/\^circ/g, ' degrees ')
+      .replace(/\^/g, ' to the power of ')
+      .replace(/_\{(.*?)\}/g, ' sub $1')
+      .replace(/_(.)/g, ' sub $1')
+      .replace(/\\sin/g, ' sine ')
+      .replace(/\\cos/g, ' cosine ')
+      .replace(/\\tan/g, ' tangent ')
+      .replace(/\\times/g, ' times ')
+      .replace(/\\cdot/g, ' dot ')
+      .replace(/\\div/g, ' divided by ')
+      .replace(/\\pm/g, ' plus or minus ')
+      .replace(/\\approx/g, ' approximately ')
+      .replace(/\\neq/g, ' is not equal to ')
+      .replace(/\\leq/g, ' is less than or equal to ')
+      .replace(/\\geq/g, ' is greater than or equal to ')
+      .replace(/\\infty/g, ' infinity ')
+      .replace(/\\pi/g, ' pi ')
+      .replace(/\\alpha/g, ' alpha ')
+      .replace(/\\beta/g, ' beta ')
+      .replace(/\\theta/g, ' theta ')
+      .replace(/\\lambda/g, ' lambda ')
+      .replace(/\\Delta/g, ' delta ')
+      .replace(/\\sum/g, ' sum ')
+      .replace(/\\int/g, ' integral ')
+      .replace(/\\vec\{(.*?)\}/g, 'vector $1')
+      .replace(/\\(?:left|right)/g, '')
+      .replace(/\\,/g, ' ')
+      .replace(/\\;/g, ' ')
+      .replace(/\\!/g, '')
+      .replace(/\\ /g, ' ')
+      .replace(/\\/g, '')
+      .replace(/\{/g, '')
+      .replace(/\}/g, '')
+      .replace(/\$/g, '');
+  };
+
+  const cleanText = text
+    .replace(/\$\$(.*?)\$\$/g, (_, match) => cleanLaTeX(match))
+    .replace(/\$(.*?)\$/g, (_, match) => cleanLaTeX(match))
+    .replace(/\[(.*?)\]\(.*?\)/g, '$1')
+    .replace(/[#*`_]/g, '');
+
+  // Helper functions for audio conversion
+  const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
+    const binaryString = atob(base64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes.buffer;
+  };
+
+  const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+  };
+
+  const l16ToWav = (audioBuffer: ArrayBuffer, sampleRate: number, channels: number): ArrayBuffer => {
+    const audioData = new Int16Array(audioBuffer);
+    const wavBuffer = new ArrayBuffer(44 + audioData.length * 2);
+    const view = new DataView(wavBuffer);
+
+    // WAV header
+    const writeString = (offset: number, string: string) => {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    };
+
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + audioData.length * 2, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true); // PCM format
+    view.setUint16(22, channels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * channels * 2, true);
+    view.setUint16(32, channels * 2, true);
+    view.setUint16(34, 16, true);
+    writeString(36, 'data');
+    view.setUint32(40, audioData.length * 2, true);
+
+    // Audio data
+    for (let i = 0; i < audioData.length; i++) {
+      view.setInt16(44 + i * 2, audioData[i], true);
+    }
+
+    return wavBuffer;
+  };
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-preview-tts',
+      contents: { parts: [{ text: cleanText }] },
+      config: {
+        responseModalities: ["audio"],
+        speechConfig: {
+          voiceConfig: { prebuiltVoiceConfig: {} }
+        }
+      }
+    });
+
+    // Return the audio data as base64
+    const audioPart = response.candidates?.[0]?.content?.parts?.find(part => part.inlineData);
+    if (audioPart?.inlineData) {
+      // Convert L16 to WAV format if needed
+      const mimeType = audioPart.inlineData.mimeType;
+      if (mimeType?.toLowerCase().startsWith('audio/l16')) {
+        // Convert L16 to WAV
+        const audioBuffer = base64ToArrayBuffer(audioPart.inlineData.data);
+        const wavData = l16ToWav(audioBuffer, 24000, 1); // 24kHz, mono
+        const wavBase64 = arrayBufferToBase64(wavData);
+        return `data:audio/wav;base64,${wavBase64}`;
+      } else {
+        return `data:${mimeType};base64,${audioPart.inlineData.data}`;
+      }
+    }
+    
+    throw new Error("No audio generated");
+  } catch (error) {
+    console.warn("Gemini TTS failed, falling back to browser speech synthesis:", error);
+    // Fallback to browser speech synthesis
+    throw new Error("USE_BROWSER_SYNTHESIS");
   }
 };

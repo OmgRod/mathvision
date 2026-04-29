@@ -52,12 +52,18 @@ export interface Lesson {
   checkpoints: LessonQuestion[];
 }
 
+export interface LessonHistoryData {
+  lesson: Lesson;
+  lastCheckpointIndex?: number;
+  lessonLevel?: number;
+}
+
 export interface HistoryItem {
   id: string;
   timestamp: number;
   type: 'solution' | 'practice' | 'lesson';
   topic: string;
-  data: any; // MathResult | QuizQuestion | Lesson
+  data: any; // MathResult | QuizQuestion | Lesson | LessonHistoryData
 }
 
 export interface ProcessingState {
