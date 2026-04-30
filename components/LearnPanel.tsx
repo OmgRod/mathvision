@@ -198,11 +198,10 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
     setIsAsking(true);
 
     try {
-      const context = validLesson.sections[currentSectionIndex]?.content;
-      if (!context) {
-        throw new Error('Lesson content unavailable for clarification.');
-      }
-      const response = await askLessonClarification(validLesson.topic, question, context);
+      const context = validLesson.sections[currentSectionIndex]?.content || "The student is currently at a checkpoint gathering their thoughts.";
+      const checkpointQuestions = validLesson.checkpoints.map(c => c.question);
+      
+      const response = await askLessonClarification(validLesson.topic, question, context, checkpointQuestions);
       setChatHistory(prev => [...prev, { role: 'ai', text: response }]);
     } catch (err) {
       setChatHistory(prev => [...prev, { role: 'ai', text: "I'm sorry, I couldn't process that query. Please try again." }]);

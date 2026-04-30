@@ -355,17 +355,24 @@ export const generateTopicOutline = async (topic: string, level: number): Promis
   }
 };
 
-export const askLessonClarification = async (topic: string, question: string, context: string): Promise<string> => {
+export const askLessonClarification = async (topic: string, question: string, context: string, checkpointQuestions?: string[]): Promise<string> => {
   const prompt = `
     A student is learning about "${topic}". 
     They just read the following lesson content:
     ---
     ${context}
     ---
+    ${checkpointQuestions && checkpointQuestions.length > 0 ? `
+    IMPORTANT ANTI-CHEAT RULE:
+    The following are upcoming or current checkpoint questions in the student's lesson:
+    ${checkpointQuestions.map((q, i) => `${i + 1}. ${q}`).join('\\n')}
+    
+    If the student's question asks for the answer, solution, or specific steps to ANY of these checkpoint questions, YOU MUST REFUSE TO ANSWER. Call them out playfully for trying to cheat and make them do it themselves, offering only to explain the underlying concept instead without giving away the direct answer to the checkpoint.
+    ` : ''}
     
     They have a question or need clarification: "${question}".
     
-    As a helpful tutor, explain it simply. Use Markdown and LaTeX for math ($$formula$$). 
+    As a helpful tutor, explain it simply (unless refusing due to the anti-cheat rule). Use Markdown and LaTeX for math ($$formula$$). 
     Be encouraging and clear. Keep the answer concise (under 150 words).
   `;
 
