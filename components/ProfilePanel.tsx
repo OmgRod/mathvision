@@ -24,8 +24,9 @@ import {
   X,
   Lock
 } from 'lucide-react';
-import { getUserProfile, UserProfile, saveUserProfile } from '../userService';
+import { getUserProfile, UserProfile } from '../userService';
 import { ACHIEVEMENTS } from '../achievementService';
+import { Modal } from './Modal';
 
 const ICON_MAP: Record<string, React.ReactNode> = {
   'Footprints': <Footprints size={18} />,
@@ -158,6 +159,7 @@ const AchievementsModal: React.FC<{ isOpen: boolean, onClose: () => void, profil
 export const ProfilePanel: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile>(getUserProfile());
   const [showAchievementsModal, setShowAchievementsModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
   const [exportData, setExportData] = useState<string>('');
 
   useEffect(() => {
@@ -204,6 +206,11 @@ export const ProfilePanel: React.FC = () => {
     reader.readAsText(file);
   };
 
+  const handleResetAllData = () => {
+    localStorage.clear();
+    window.location.reload();
+  };
+
   const progress = (profile.xp % (profile.level * 100)) / (profile.level);
   const xpToNext = (profile.level * 100) - (profile.xp % (profile.level * 100));
 
@@ -220,11 +227,20 @@ export const ProfilePanel: React.FC = () => {
           />
         )}
       </AnimatePresence>
+      <Modal
+        isOpen={showResetModal}
+        onClose={() => setShowResetModal(false)}
+        onConfirm={handleResetAllData}
+        title="Reset all progress?"
+        message="This will permanently erase your saved profile, history, achievements, and practice data from this browser. Are you sure you want to continue?"
+        confirmLabel="Yes, reset data"
+        confirmVariant="danger"
+      />
 
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-8">
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-             <div className="w-16 h-16 bg-indigo-600 rounded-3xl flex items-center justify-center text-white shadow-2xl shadow-indigo-200">
+             <div className="aspect-square w-16 h-16 min-w-[4rem] min-h-[4rem] bg-indigo-600 rounded-3xl flex items-center justify-center text-white shrink-0">
                 <span className="text-2xl font-black">{profile.level}</span>
              </div>
               <div>
@@ -246,6 +262,12 @@ export const ProfilePanel: React.FC = () => {
           >
             <Download size={20} />
             EXPORT ALL DATA
+          </button>
+          <button
+            onClick={() => setShowResetModal(true)}
+            className="flex items-center justify-center px-6 py-4 bg-rose-600 text-white rounded-2xl font-black hover:bg-rose-700 transition-all shadow-xl shadow-rose-200 dark:shadow-none"
+          >
+            Reset All Data
           </button>
         </div>
       </header>

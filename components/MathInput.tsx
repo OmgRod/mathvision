@@ -85,6 +85,12 @@ export const MathInput: React.FC<MathInputProps> = ({
   const handleInput = (e: any) => {
     const newValue = e.target.value;
     onChange(newValue);
+
+    // Keep the MathField mode synced when text mode is active.
+    // MathLive can reset back to math mode when the last text character is deleted.
+    if (mfRef.current && !isMathMode) {
+      mfRef.current.executeCommand(['switch-mode', 'text']);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

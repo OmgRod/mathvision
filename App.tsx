@@ -405,6 +405,14 @@ const App: React.FC = () => {
               {/* Result Section */}
               {state.result && (
                 <div id="result-section">
+                  <div className="flex justify-end mb-4">
+                    <button
+                      onClick={clearInput}
+                      className="text-sm text-slate-400 hover:text-slate-500 dark:text-slate-500 dark:hover:text-slate-300 font-bold transition-colors"
+                    >
+                      Reset solver
+                    </button>
+                  </div>
                   <MathSolution result={state.result} />
                   {recommendedLearnTopic && (
                     <div className="mt-8 p-6 rounded-[2rem] bg-indigo-50 dark:bg-slate-900 border border-indigo-100 dark:border-slate-700 shadow-2xl shadow-indigo-100/30 dark:shadow-none">

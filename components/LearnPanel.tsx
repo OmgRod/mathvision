@@ -53,6 +53,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
   // Checkpoint State
   const [showCheckpoint, setShowCheckpoint] = useState(false);
   const [currentCheckpointIndex, setCurrentCheckpointIndex] = useState(0);
+  const [completedCheckpointIndex, setCompletedCheckpointIndex] = useState(-1);
   const [userAnswer, setUserAnswer] = useState('');
   const [checkpointFeedback, setCheckpointFeedback] = useState<QuizFeedback | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
@@ -268,6 +269,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
   const nextCheckpoint = () => {
     if (!validLesson) return;
     if (currentCheckpointIndex < validLesson.checkpoints.length - 1) {
+      setCompletedCheckpointIndex(prev => Math.max(prev, currentCheckpointIndex));
       // Save current progress to history
       saveToHistory('lesson', topic || validLesson.topic, {
         lesson: validLesson,
@@ -279,6 +281,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
       setCheckpointFeedback(null);
     } else {
       // Completed all checkpoints
+      setCompletedCheckpointIndex(prev => Math.max(prev, currentCheckpointIndex));
       const xpAmount = 150 * lessonLevel;
       addXP(xpAmount); // Comprehensive lesson bonus
       if (topic) addMastery(topic);
@@ -297,9 +300,17 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
 
   const prevCheckpoint = () => {
     if (currentCheckpointIndex > 0) {
-      setCurrentCheckpointIndex(prev => prev - 1);
+      const prevIndex = currentCheckpointIndex - 1;
+      setCurrentCheckpointIndex(prevIndex);
       setUserAnswer('');
-      setCheckpointFeedback(null);
+      if (prevIndex <= completedCheckpointIndex) {
+        setCheckpointFeedback({
+          isCorrect: true,
+          message: 'You already completed this checkpoint. Review it and continue when ready.',
+        });
+      } else {
+        setCheckpointFeedback(null);
+      }
     } else {
       setShowCheckpoint(false);
     }
@@ -479,7 +490,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {(topicOutline.length > 0 ? topicOutline : ["Advanced Concepts", "Practical Logic", "Complex Systems", "Real-world Proofs"]).map((item, i) => (
                       <div key={i} className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-700">
-                        <div className="w-6 h-6 bg-indigo-600 dark:bg-indigo-500 rounded-lg flex items-center justify-center text-white text-[10px] font-bold">{i + 1}</div>
+                        <div className="aspect-square w-6 h-6 min-w-[1.5rem] min-h-[1.5rem] bg-indigo-600 dark:bg-indigo-500 rounded-2xl flex items-center justify-center text-white text-[10px] font-bold shrink-0">{i + 1}</div>
                         <span className="font-bold text-slate-700 dark:text-slate-300">{item}</span>
                       </div>
                     ))}
@@ -587,7 +598,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
                 >
                   <div className="flex items-center justify-between gap-3 mb-8">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-indigo-600 dark:bg-indigo-500 text-white rounded-xl flex items-center justify-center font-black">
+                      <div className="aspect-square w-10 h-10 min-w-[2.5rem] min-h-[2.5rem] bg-indigo-600 dark:bg-indigo-500 text-white rounded-xl flex items-center justify-center font-black shrink-0">
                         {currentSectionIndex + 1}
                       </div>
                       <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
