@@ -1,13 +1,14 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { PRACTICE_TOPICS, getTopicCategories, getTopicLevels, formatTopicLevel } from '../constants';
+import React, { useState, useEffect } from 'react';
+import { PRACTICE_TOPICS, formatTopicLevel } from '../constants';
 import { Lesson, LessonSection, LessonQuestion, QuizFeedback } from '../types';
 import { generateLesson, askLessonClarification, evaluateLessonAnswer, generateTopicOutline } from '../geminiService';
 import { 
-  ArrowLeft, Search, GraduationCap, ChevronRight, ChevronLeft, 
+  ArrowLeft, GraduationCap, ChevronRight, ChevronLeft, 
   MessageCircle, Send, Loader2, BookOpen, CheckCircle2, AlertCircle, 
   Lightbulb, RefreshCcw, Volume2, Sparkles, PenTool, Pencil
 } from 'lucide-react';
 import { TTSButton } from './TTSButton';
+import { TopicLibrary } from './TopicLibrary';
 import { Whiteboard } from './Whiteboard';
 import { CelebrationOverlay } from './CelebrationOverlay';
 import { addXP, updateGenericStats, addMastery, incrementWhiteboardOpens } from '../userService';
@@ -40,9 +41,6 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
   const [lesson, setLesson] = useState<Lesson | null>(restoredLesson || null);
   const [lessonError, setLessonError] = useState<string | null>(null);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedLevel, setSelectedLevel] = useState<string>('All');
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [customTopic, setCustomTopic] = useState('');
 
   // Clarification Chat
@@ -58,19 +56,6 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
   const [checkpointFeedback, setCheckpointFeedback] = useState<QuizFeedback | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
-
-  const levels = useMemo<string[]>(() => ['All', ...Array.from(new Set(PRACTICE_TOPICS.flatMap(getTopicLevels)))], []);
-  const categories = useMemo<string[]>(() => ['All', ...Array.from(new Set(PRACTICE_TOPICS.flatMap(getTopicCategories)))], []);
-
-  const filteredTopics = useMemo(() => {
-    return PRACTICE_TOPICS.filter(t => {
-      const matchesSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          t.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesLevel = selectedLevel === 'All' || getTopicLevels(t).includes(selectedLevel);
-      const matchesCategory = selectedCategory === 'All' || getTopicCategories(t).includes(selectedCategory);
-      return matchesSearch && matchesLevel && matchesCategory;
-    });
-  }, [searchTerm, selectedLevel, selectedCategory]);
 
   const [isFinished, setIsFinished] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'detail' | 'learning'>(
@@ -359,18 +344,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
         </header>
 
         <div className="space-y-8 bg-white dark:bg-slate-800 p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] border border-slate-100 dark:border-slate-700 shadow-2xl shadow-indigo-100/30 dark:shadow-none">
-          <div className="flex flex-col md:flex-row gap-4 items-center">
-            <div className="relative flex-grow w-full">
-              <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search topics (e.g. Equations)..."
-                className="w-full pl-14 pr-4 py-4 md:py-5 bg-slate-50 dark:bg-slate-900 border-2 border-slate-50 dark:border-slate-700 rounded-[1.5rem] md:rounded-[2rem] focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 transition-all font-medium text-sm md:text-base dark:text-white"
-              />
-            </div>
-          </div>
+          <TopicLibrary topics={PRACTICE_TOPICS} onTopicSelect={startLesson} />
 
           <div className="p-6 md:p-8 bg-indigo-50 dark:bg-indigo-900/10 rounded-[2rem] md:rounded-[2.5rem] border border-indigo-100 dark:border-indigo-900/30 flex flex-col md:flex-row gap-6 items-center">
             <div className="shrink-0 w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center">
@@ -398,47 +372,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
             </div>
           </div>
 
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
-              <span className="text-[10px] md:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest shrink-0">Level</span>
-              <div className="flex flex-nowrap gap-2">
-                {levels.map(level => (
-                  <button
-                    key={level}
-                    onClick={() => setSelectedLevel(level)}
-                    className={`px-4 md:px-6 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-bold transition-all whitespace-nowrap ${
-                      selectedLevel === level ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
-                    }`}
-                  >
-                    {level}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <AnimatePresence>
-              {filteredTopics.map((t, idx) => (
-                <motion.button
-                  key={t.name}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05 }}
-                  onClick={() => startLesson(t.name)}
-                  className="group p-8 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[2.5rem] text-left hover:border-indigo-600 dark:hover:border-indigo-400 hover:shadow-2xl hover:shadow-indigo-100 dark:hover:shadow-none transition-all transform hover:-translate-y-2 relative overflow-hidden"
-                >
-                  <div className="absolute top-0 left-0 w-2 h-full bg-slate-100 dark:bg-slate-700 group-hover:bg-indigo-600 dark:group-hover:bg-indigo-500 transition-colors"></div>
-                  <div className="flex justify-between items-start mb-6">
-                    <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 rounded-lg text-[10px] font-black uppercase tracking-widest">{formatTopicLevel(t)}</span>
-                    <ChevronRight className="text-slate-200 dark:text-slate-700 group-hover:text-indigo-600 dark:group-hover:text-indigo-400" size={20} />
-                  </div>
-                  <h4 className="text-xl font-black text-slate-900 dark:text-white mb-3 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors uppercase tracking-tight">{t.name}</h4>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed font-medium">{t.description}</p>
-                </motion.button>
-              ))}
-            </AnimatePresence>
-          </div>
+          <TopicLibrary topics={PRACTICE_TOPICS} onTopicSelect={startLesson} />
         </div>
       </div>
     );

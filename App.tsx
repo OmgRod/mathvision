@@ -228,7 +228,7 @@ const App: React.FC = () => {
         </div>
       </div>
       
-      <main className="flex-grow container mx-auto px-4 py-8 max-w-4xl">
+      <main className="flex-grow container mx-auto px-4 py-8 max-w-6xl">
         <AnimatePresence mode="wait">
           {mode === 'solver' && (
             <motion.div 
