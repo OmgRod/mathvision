@@ -69,8 +69,8 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onUpload }) => {
       onDrop={handleDrop}
       onClick={() => fileInputRef.current?.click()}
       className={`
-        relative border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all duration-200
-        ${isDragging ? 'border-indigo-500 bg-indigo-50 scale-[1.01]' : 'border-slate-300 bg-slate-50 hover:bg-slate-100 hover:border-slate-400'}
+        relative border-2 rounded-xl p-12 text-center cursor-pointer transition-all duration-200
+        ${isDragging ? 'border-indigo-500 bg-slate-900 scale-[1.01]' : 'border-slate-700 bg-slate-950/90 hover:border-slate-500 hover:bg-slate-900'}
       `}
     >
       <input
@@ -82,30 +82,30 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onUpload }) => {
       />
       
       <div className="flex flex-col items-center gap-4">
-        <div className={`p-4 rounded-full ${isDragging ? 'bg-indigo-100 text-indigo-600' : 'bg-white text-slate-400'} shadow-sm border border-slate-100 transition-colors`}>
+        <div className={`p-4 rounded-full ${isDragging ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-900 text-slate-200'} shadow-sm border border-slate-800 transition-colors`}>
           <Upload size={32} />
         </div>
         <div>
-          <p className="text-lg font-medium text-slate-800">
+          <p className="text-lg font-medium text-slate-100">
             Click to upload or drag & drop
           </p>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-slate-400 mt-1">
             PNG, JPG, or GIF. You can also paste directly!
           </p>
         </div>
         
-        <div className="flex items-center gap-4 mt-4 text-xs font-semibold text-slate-400 uppercase tracking-widest">
-          <div className="h-px w-8 bg-slate-200"></div>
+        <div className="flex items-center gap-4 mt-4 text-xs font-semibold text-slate-500 uppercase tracking-widest">
+          <div className="h-px w-8 bg-slate-700"></div>
           OR
-          <div className="h-px w-8 bg-slate-200"></div>
+          <div className="h-px w-8 bg-slate-700"></div>
         </div>
         
-        <div className="flex gap-3 text-slate-500">
-          <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+        <div className="flex flex-col sm:flex-row gap-3 text-slate-200">
+          <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg shadow-sm">
             <Clipboard size={14} />
             <span>Paste Image</span>
           </div>
-          <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg shadow-sm">
             <MousePointer2 size={14} />
             <span>Click Select</span>
           </div>

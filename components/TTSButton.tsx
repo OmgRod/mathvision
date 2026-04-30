@@ -3,6 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Volume2, VolumeX, Loader2 } from 'lucide-react';
 import { generateSpeech } from '../geminiService';
 
+const ttsCache = new Map<string, string>();
+
 interface TTSButtonProps {
   text: string;
   className?: string;
@@ -13,12 +15,22 @@ export const TTSButton: React.FC<TTSButtonProps> = ({ text, className = '', size
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const isBrowserSynthesisRef = useRef(false);
 
   useEffect(() => {
     return () => {
       if (audioRef.current) {
+        audioRef.current.oncanplaythrough = null;
+        audioRef.current.onended = null;
+        audioRef.current.onerror = null;
         audioRef.current.pause();
         audioRef.current = null;
+      }
+      if (isBrowserSynthesisRef.current) {
+        window.speechSynthesis.cancel();
+        isBrowserSynthesisRef.current = false;
+        utteranceRef.current = null;
       }
     };
   }, []);
@@ -26,21 +38,46 @@ export const TTSButton: React.FC<TTSButtonProps> = ({ text, className = '', size
   const toggleSpeech = async () => {
     if (isSpeaking) {
       if (audioRef.current) {
+        audioRef.current.oncanplaythrough = null;
+        audioRef.current.onended = null;
+        audioRef.current.onerror = null;
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
+        audioRef.current = null;
+      }
+      if (isBrowserSynthesisRef.current) {
+        window.speechSynthesis.cancel();
+        isBrowserSynthesisRef.current = false;
+        utteranceRef.current = null;
       }
       setIsSpeaking(false);
+      setIsLoading(false);
       return;
     }
 
-    if (!text.trim()) return;
+    const trimmedText = text.trim();
+    if (!trimmedText) return;
 
     setIsLoading(true);
+
     try {
-      const audioDataUrl = await generateSpeech(text);
-      
+      let audioDataUrl = ttsCache.get(trimmedText);
+      if (!audioDataUrl) {
+        audioDataUrl = await generateSpeech(trimmedText);
+        ttsCache.set(trimmedText, audioDataUrl);
+      }
+
       if (audioRef.current) {
+        audioRef.current.oncanplaythrough = null;
+        audioRef.current.onended = null;
+        audioRef.current.onerror = null;
         audioRef.current.pause();
+        audioRef.current = null;
+      }
+      if (isBrowserSynthesisRef.current) {
+        window.speechSynthesis.cancel();
+        isBrowserSynthesisRef.current = false;
+        utteranceRef.current = null;
       }
 
       const audio = new Audio(audioDataUrl);
@@ -125,9 +162,19 @@ export const TTSButton: React.FC<TTSButtonProps> = ({ text, className = '', size
             .replace(/[#*`_]/g, '');
 
           const utterance = new SpeechSynthesisUtterance(cleanText);
-          utterance.onend = () => setIsSpeaking(false);
-          utterance.onerror = () => setIsSpeaking(false);
+          utterance.onend = () => {
+            setIsSpeaking(false);
+            isBrowserSynthesisRef.current = false;
+            utteranceRef.current = null;
+          };
+          utterance.onerror = () => {
+            setIsSpeaking(false);
+            isBrowserSynthesisRef.current = false;
+            utteranceRef.current = null;
+          };
           
+          utteranceRef.current = utterance;
+          isBrowserSynthesisRef.current = true;
           window.speechSynthesis.speak(utterance);
           setIsSpeaking(true);
           setIsLoading(false);

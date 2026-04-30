@@ -260,43 +260,48 @@ const App: React.FC = () => {
               )}
 
               {/* Input Section */}
-              <section id="solve" className="flex flex-col items-center">
+              <section id="solve" className="flex flex-col items-center bg-slate-950/70 border border-slate-800 rounded-[3rem] p-8 shadow-2xl shadow-slate-950/40">
                 {!image ? (
-                  <div className="w-full max-w-2xl space-y-8">
+                  <div className="w-full max-w-3xl space-y-8 bg-slate-900/90 border border-slate-800 rounded-[2.5rem] p-8 shadow-xl shadow-slate-950/20">
                     <div className="space-y-4">
-                      <label className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">Type your question</label>
+                      <label className="text-sm font-bold text-slate-400 uppercase tracking-widest px-1">Type your question</label>
                       <textarea
                         value={textInput}
                         onChange={(e) => setTextInput(e.target.value)}
                         placeholder="e.g. What is the derivative of x^2 + 5x?"
-                        className="w-full h-32 px-8 py-6 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-[2rem] focus:border-indigo-500 focus:ring-0 transition-all font-medium text-lg resize-none shadow-sm dark:text-white"
+                        className="w-full h-36 px-8 py-6 bg-slate-950 border-2 border-slate-800 rounded-[2rem] focus:border-indigo-500 focus:ring-0 transition-all font-medium text-lg resize-none text-slate-100 placeholder:text-slate-500"
                       />
+                      <div className="grid gap-3 sm:grid-cols-3 text-sm text-slate-400 mt-2">
+                        <span className="rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3">Handwritten math</span>
+                        <span className="rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3">Symbolic equations</span>
+                        <span className="rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3">Word problems + proofs</span>
+                      </div>
                     </div>
 
                     {!textInput && (
                       <>
-                        <div className="flex items-center gap-4 text-slate-300 dark:text-slate-700">
-                          <div className="h-px flex-grow bg-slate-200 dark:bg-slate-700"></div>
+                        <div className="flex items-center gap-4 text-slate-400">
+                          <div className="h-px flex-grow bg-slate-800"></div>
                           <span className="text-sm font-bold uppercase tracking-widest">or upload image</span>
-                          <div className="h-px flex-grow bg-slate-200 dark:bg-slate-700"></div>
+                          <div className="h-px flex-grow bg-slate-800"></div>
                         </div>
 
                         <ImageUploader onUpload={handleImageUpload} />
                         
-                        <div className="flex items-center gap-4 text-slate-300 dark:text-slate-700">
-                          <div className="h-px flex-grow bg-slate-200 dark:bg-slate-700"></div>
+                        <div className="flex items-center gap-4 text-slate-400">
+                          <div className="h-px flex-grow bg-slate-800"></div>
                           <span className="text-sm font-bold uppercase tracking-widest">or use camera</span>
-                          <div className="h-px flex-grow bg-slate-200 dark:bg-slate-700"></div>
+                          <div className="h-px flex-grow bg-slate-800"></div>
                         </div>
 
                         <button
                           onClick={() => setShowCamera(true)}
-                          className="w-full py-6 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-3xl flex flex-col items-center gap-3 hover:border-indigo-500 hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10 transition-all group"
+                          className="w-full py-6 bg-slate-900 border-2 border-slate-800 rounded-3xl flex flex-col items-center gap-3 hover:border-indigo-500 hover:bg-slate-800/80 transition-all group"
                         >
-                          <div className="p-4 bg-slate-100 dark:bg-slate-700 rounded-2xl text-slate-400 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                          <div className="p-4 bg-slate-800 rounded-2xl text-slate-300 group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors">
                             <Camera size={32} />
                           </div>
-                          <span className="font-bold text-slate-700 dark:text-slate-200">Open Camera</span>
+                          <span className="font-bold text-slate-200">Open Camera</span>
                         </button>
                       </>
                     )}
@@ -329,7 +334,7 @@ const App: React.FC = () => {
                   <div className="w-full max-w-lg space-y-6">
                     <motion.div 
                       layoutId="image-preview"
-                      className="relative group rounded-[2.5rem] overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-2xl shadow-slate-200 dark:shadow-none"
+                      className="relative group rounded-[2.5rem] overflow-hidden border border-slate-800 bg-slate-950 shadow-2xl shadow-slate-950/40"
                     >
                       <img 
                         src={image} 
@@ -386,7 +391,7 @@ const App: React.FC = () => {
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="max-w-2xl mx-auto p-8 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400 rounded-[2rem] shadow-xl shadow-red-50 dark:shadow-none"
+                  className="max-w-2xl mx-auto p-8 bg-slate-950/90 border border-red-900/30 text-red-200 rounded-[2rem] shadow-xl shadow-slate-950/40"
                 >
                   <div className="flex items-center gap-4 mb-4">
                     <AlertCircle className="shrink-0" size={24} />
@@ -437,47 +442,64 @@ const App: React.FC = () => {
               {!image && !state.result && !textInput && (
                 <>
                   {/* Features Section */}
-                  <section id="features" className="grid md:grid-cols-3 gap-6 py-12">
-                    <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-xl shadow-slate-100/50 dark:shadow-none">
-                      <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center mb-6">
-                        <Camera size={24} />
+                  <section id="features" className="grid gap-8 lg:grid-cols-[1.25fr_0.75fr] py-12">
+                    <div className="bg-slate-950 border border-slate-800 rounded-[3rem] p-10 shadow-2xl shadow-slate-950/30">
+                      <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-600/10 text-indigo-200 text-xs font-black uppercase tracking-[0.3em]">AI-powered math</span>
+                      <h2 className="mt-6 text-4xl font-black text-white tracking-tight">A solver built for learning, not just answers.</h2>
+                      <p className="mt-5 text-slate-400 leading-8 max-w-2xl">MathVision blends instant problem solving with intuitive reasoning, walkthroughs, and follow-up guidance so every answer becomes a lesson.</p>
+                      <div className="mt-10 grid gap-4 sm:grid-cols-2">
+                        <div className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-6">
+                          <h3 className="text-lg font-bold text-white">Step-by-step clarity</h3>
+                          <p className="mt-3 text-slate-400 text-sm">See each step broken down in plain language so you can understand the how and why.</p>
+                        </div>
+                        <div className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-6">
+                          <h3 className="text-lg font-bold text-white">Full notation support</h3>
+                          <p className="mt-3 text-slate-400 text-sm">Works with handwritten math, LaTeX-style symbols, and English word problems.</p>
+                        </div>
                       </div>
-                      <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Smart Capture</h3>
-                      <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Use your camera or upload images. Our AI recognizes handwriting and complex symbols instantly.</p>
                     </div>
-                    <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-xl shadow-slate-100/50 dark:shadow-none">
-                      <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mb-6">
-                        <Sparkles size={24} />
+                    <div className="space-y-6">
+                      <div className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-8 shadow-xl shadow-slate-950/20">
+                        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-600/10 text-indigo-200 mb-4">
+                          <Sparkles size={24} />
+                        </div>
+                        <h3 className="text-xl font-bold text-white">Instant support</h3>
+                        <p className="mt-3 text-slate-400 text-sm">Get lightning-fast answers without losing the teaching moment.</p>
                       </div>
-                      <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Dual Modes</h3>
-                      <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Choose between "Easy Mode" for quick card-based steps or "Essay Mode" for detailed mathematical proofs.</p>
-                    </div>
-                    <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-xl shadow-slate-100/50 dark:shadow-none">
-                      <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-2xl flex items-center justify-center mb-6">
-                        <BookOpen size={24} />
+                      <div className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-8 shadow-xl shadow-slate-950/20">
+                        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-emerald-600/10 text-emerald-200 mb-4">
+                          <BookOpen size={24} />
+                        </div>
+                        <h3 className="text-xl font-bold text-white">Learn by doing</h3>
+                        <p className="mt-3 text-slate-400 text-sm">Practice with real examples and immediately understand why each method works.</p>
                       </div>
-                      <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Word Questions</h3>
-                      <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Type your math questions or describe problems. Our AI understands plain language and solves it.</p>
+                      <div className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-8 shadow-xl shadow-slate-950/20">
+                        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-amber-600/10 text-amber-200 mb-4">
+                          <Camera size={24} />
+                        </div>
+                        <h3 className="text-xl font-bold text-white">Multi-input workflow</h3>
+                        <p className="mt-3 text-slate-400 text-sm">Type, snap, or upload — the solver adapts to your workflow and workflow preferences.</p>
+                      </div>
                     </div>
                   </section>
 
-                  {/* How it works Section */}
-                  <section id="how-it-works" className="py-12 bg-indigo-600 dark:bg-indigo-700 rounded-[3rem] p-12 text-white relative overflow-hidden shadow-2xl shadow-indigo-200 dark:shadow-none">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
-                    <div className="relative z-10 max-w-2xl">
-                      <h2 className="text-3xl font-black mb-6 tracking-tight">Master Math Step-by-Step</h2>
-                      <div className="space-y-8">
-                        <div className="flex gap-4">
-                          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-black shrink-0">1</div>
-                          <p className="text-indigo-100 font-medium">Input your problem via photo, camera, or text box.</p>
+                  <section id="how-it-works" className="py-12">
+                    <div className="bg-slate-950 border border-slate-800 rounded-[3rem] p-12 shadow-2xl shadow-slate-950/30">
+                      <div className="grid gap-6 lg:grid-cols-3">
+                        <div className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-8">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600/10 text-indigo-200 mb-5">1</div>
+                          <h3 className="text-xl font-bold text-white">Instant problem capture</h3>
+                          <p className="mt-3 text-slate-400 text-sm">Upload images, paste screenshots, or type any equation and the model reads it instantly.</p>
                         </div>
-                        <div className="flex gap-4">
-                          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-black shrink-0">2</div>
-                          <p className="text-indigo-100 font-medium">Our advanced AI model analyzes the logic and builds a calculation path.</p>
+                        <div className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-8">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600/10 text-emerald-200 mb-5">2</div>
+                          <h3 className="text-xl font-bold text-white">AI-powered reasoning</h3>
+                          <p className="mt-3 text-slate-400 text-sm">Every solution includes logical step progression so you learn instead of just copy answers.</p>
                         </div>
-                        <div className="flex gap-4">
-                          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-black shrink-0">3</div>
-                          <p className="text-indigo-100 font-medium">Navigate through the steps interactively and verify your understanding.</p>
+                        <div className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-8">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-600/10 text-amber-200 mb-5">3</div>
+                          <h3 className="text-xl font-bold text-white">Review & improve</h3>
+                          <p className="mt-3 text-slate-400 text-sm">Use follow-up prompts to ask “Why?”, “Explain again”, or “Show a simpler method.”</p>
                         </div>
                       </div>
                     </div>

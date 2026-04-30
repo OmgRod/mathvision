@@ -1,4 +1,3 @@
-
 export type TopicDimension = string | string[];
 
 export interface MathTopic {
@@ -540,5 +539,53 @@ export const PRACTICE_TOPICS: MathTopic[] = [
   { "name": "Quantum Mechanics Mathematics", "category": "Physics", "level": "University", "description": "Wavefunctions, operators, and linear algebra in quantum systems" },
   { "name": "Thermodynamics and Statistical Mechanics", "category": "Physics", "level": "University", "description": "Probability distributions and energy states" },
   { "name": "Reaction Kinetics Modelling", "category": "Chemistry", "level": "University", "description": "Rate equations, orders of reaction, and integrated rate laws" },
-  { "name": "Biostatistics and Modelling", "category": "Biology", "level": "University", "description": "Mathematical modelling of populations and biological systems" }
+  { "name": "Biostatistics and Modelling", "category": "Biology", "level": "University", "description": "Mathematical modelling of populations and biological systems" },
+
+  // --- ADDITIONAL TONS OF NEW TOPICS ---
+  // Pure Math
+  { "name": "Lie Algebras", "category": "Algebra", "level": "Advanced", "description": "Algebraic structures studying continuous transformation groups" },
+  { "name": "Ramsey Theory", "category": "Combinatorics", "level": "University", "description": "Finding order in guaranteed subsets of chaos" },
+  { "name": "Betti Numbers", "category": "Topology", "level": "Advanced", "description": "Topological invariants of holes in spaces" },
+  { "name": "Algebraic K-Theory", "category": "Algebra", "level": "Advanced", "description": "Studying projective modules and vector bundles" },
+  { "name": "Homological Algebra", "category": "Algebra", "level": "Advanced", "description": "Studying homology in algebraic settings" },
+  { "name": "Analytic Number Theory", "category": "Number Theory", "level": "Advanced", "description": "Using analysis to solve integer problems" },
+  { "name": "Differential Geometry: Riemannian Manifolds", "category": "Geometry", "level": "Advanced", "description": "Curved spaces equipped with metric tensors" },
+  
+  // Computer Science & AI
+  { "name": "Machine Learning: Support Vector Machines", "category": "Computing", "level": "University", "description": "Math of finding optimal hyperplanes" },
+  { "name": "Deep Learning: Backpropagation Math", "category": "Computing", "level": "University", "description": "Chain rule applied to neural networks" },
+  { "name": "Computer Graphics: Quaternions", "category": "Computing", "level": "University", "description": "4D numbers and 3D rotational math" },
+  { "name": "Cryptography: Lattice-Based", "category": "Cryptography", "level": "Advanced", "description": "Post-quantum cryptographic algorithms" },
+  { "name": "Algorithms: Bellman-Ford", "category": "Computing", "level": "University", "description": "Shortest paths handling negative weights" },
+  { "name": "Randomized Algorithms", "category": "Computing", "level": "University", "description": "Algorithms employing a degree of reasonableness" },
+  
+  // Applied Math & Physics
+  { "name": "Calculus of Variations", "category": "Calculus", "level": "Advanced", "description": "Euler-Lagrange equations for optimizing paths" },
+  { "name": "Fluid Dynamics: Navier-Stokes (Detailed)", "category": "Physics", "level": "Advanced", "description": "Differential equations of viscous fluid flow" },
+  { "name": "Quantum Field Theory", "category": "Physics", "level": "Advanced", "description": "Mathematical framework uniting QM and special relativity" },
+  { "name": "Dynamical Systems: Lyapunov Stability", "category": "Analysis", "level": "University", "description": "Analyzing the stability of equilibrium points" },
+  { "name": "Stochastic Differential Equations", "category": "Statistics", "level": "Advanced", "description": "Differential equations with noise terms" },
+  
+  // Finance & Economics
+  { "name": "Financial Math: Ito Calculus", "category": "Finance", "level": "Advanced", "description": "Stochastic calculus applied to finance models" },
+  { "name": "Game Theory: Mechanism Design", "category": "Economics", "level": "Advanced", "description": "Engineering games to achieve desired outcomes" },
+  { "name": "Portfolio Optimization", "category": "Finance", "level": "University", "description": "Markowitz model and the efficient frontier" },
+  { "name": "Actuarial Science: Survival Models", "category": "Finance", "level": "University", "description": "Life contingencies and mortality math" },
+  
+  // Statistics and Optimization
+  { "name": "Markov Chain Monte Carlo (MCMC)", "category": "Statistics", "level": "Advanced", "description": "Algorithms for sampling probability distributions" },
+  { "name": "Non-linear Programming", "category": "Optimization", "level": "Advanced", "description": "Solving optimization problems with non-linear constraints" },
+  { "name": "Convex Optimization", "category": "Optimization", "level": "University", "description": "The math of minimizing convex functions" },
+  { "name": "Game Theory: Cooperative Games", "category": "Logic", "level": "University", "description": "Coalitions and the Shapley Value" },
+  { "name": "Time Series Analysis", "category": "Statistics", "level": "University", "description": "ARIMA and forecasting sequential data" },
+  { "name": "Principal Component Analysis", "category": "Statistics", "level": "University", "description": "Eigenvectors in dimensionality reduction" },
+  
+  // Primary & Middle School Additions
+  { "name": "Understanding Roman Numerals", "category": "History", "level": "Primary", "description": "Translating and computing with Roman digits" },
+  { "name": "Money Mathematics", "category": "Arithmetic", "level": "Primary", "description": "Adding, subtracting, and giving change in diverse currencies" },
+  { "name": "Reflection and Symmetry", "category": "Geometry", "level": "Primary", "description": "Finding lines of symmetry in 2D shapes" },
+  { "name": "Reading Coordinates", "category": "Geometry", "level": "Primary", "description": "Navigating simple grids with (x, y)" },
+  { "name": "Volume of Prisms (Basic)", "category": "Geometry", "level": "Middle School", "description": "Lengths x Widths x Heights of cubes and cuboids" },
+  { "name": "Angle Bearings", "category": "Geometry", "level": "Middle School", "description": "Navigating maps using 3-figure degree bearings" },
+  { "name": "Conversion of Area & Volume Units", "category": "Arithmetic", "level": "Middle School", "description": "Squaring and cubing metric conversion factors" }
 ];
