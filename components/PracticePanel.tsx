@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Brain, 
@@ -33,7 +33,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import { MathInput } from './MathInput';
-import { TOPIC_DATA, PRACTICE_TOPICS, MathTopic, getTopicCategories, getTopicLevels, formatTopicLevel } from '../constants';
+import { PRACTICE_TOPICS, MathTopic, getTopicCategories, getTopicLevels, formatTopicLevel } from '../constants';
 
 const wrapMathIfNeeded = (value: string) => {
   const trimmed = value.trim();
@@ -45,7 +45,7 @@ const wrapMathIfNeeded = (value: string) => {
   return trimmed;
 };
 
-export const PracticePanel: React.FC<{ initialData?: { topic: string, data: QuizQuestion } }> = ({ initialData }) => {
+export const PracticePanel: React.FC<{ initialData?: { topic: string, data?: QuizQuestion } }> = ({ initialData }) => {
   const [topic, setTopic] = useState<string | null>(initialData?.topic || null);
   const [customTopic, setCustomTopic] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
@@ -59,6 +59,12 @@ export const PracticePanel: React.FC<{ initialData?: { topic: string, data: Quiz
   const [hintsUsed, setHintsUsed] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<{ step: any, answer: string }[]>([]);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
+  
+  useEffect(() => {
+    if (initialData?.topic && !initialData.data && !question) {
+      startPractice(initialData.topic);
+    }
+  }, [initialData?.topic]);
   
   // Search and Filter State
   const [searchQuery, setSearchQuery] = useState('');

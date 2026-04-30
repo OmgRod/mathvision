@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { PRACTICE_TOPICS, TOPIC_DATA, getTopicCategories, getTopicLevels, formatTopicLevel } from '../constants';
+import { PRACTICE_TOPICS, getTopicCategories, getTopicLevels, formatTopicLevel } from '../constants';
 import { Lesson, LessonSection, LessonQuestion, QuizFeedback } from '../types';
 import { generateLesson, askLessonClarification, evaluateLessonAnswer, generateTopicOutline } from '../geminiService';
 import { 
@@ -20,17 +20,25 @@ import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import { MathInput } from './MathInput';
 
-export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; lastCheckpointIndex?: number; lessonLevel?: number } }> = ({ initialData }) => {
-  // Detect if this is a wrapped lesson with checkpoint data (new format) or plain lesson (old format)
+export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; lastCheckpointIndex?: number; lessonLevel?: number } | { topic: string }; onChallenge?: (topic: string) => void }> = ({ initialData, onChallenge }) => {
+  // Detect if this is a wrapped lesson with checkpoint data (new format), a raw Lesson object, or a topic-only launch.
   const isWrappedFormat = initialData && typeof initialData === 'object' && 'lesson' in initialData;
-  const restoredLesson: Lesson | undefined = isWrappedFormat ? (initialData as any).lesson : (initialData as Lesson | undefined);
+  const isLessonObject = initialData && typeof initialData === 'object' && 'sections' in initialData && 'checkpoints' in initialData;
+  const restoredLesson: Lesson | undefined = isWrappedFormat
+    ? (initialData as any).lesson
+    : isLessonObject
+      ? (initialData as Lesson)
+      : undefined;
   const restoredCheckpointIndex: number | undefined = isWrappedFormat ? (initialData as any).lastCheckpointIndex : undefined;
   const restoredLessonLevel: number | undefined = isWrappedFormat ? (initialData as any).lessonLevel : undefined;
+  const initialTopic = initialData && typeof initialData === 'object' && 'topic' in initialData && !isLessonObject && !isWrappedFormat ? (initialData as any).topic : undefined;
+  const isTopicOnly = !!initialData && typeof initialData === 'object' && 'topic' in initialData && !isLessonObject && !isWrappedFormat;
   const hasInitialData = !!initialData;
 
-  const [topic, setTopic] = useState<string | null>(restoredLesson ? restoredLesson.topic : null);
+  const [topic, setTopic] = useState<string | null>(restoredLesson ? restoredLesson.topic : initialTopic ?? null);
   const [loading, setLoading] = useState(false);
   const [lesson, setLesson] = useState<Lesson | null>(restoredLesson || null);
+  const [lessonError, setLessonError] = useState<string | null>(null);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLevel, setSelectedLevel] = useState<string>('All');
@@ -64,15 +72,34 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
   }, [searchTerm, selectedLevel, selectedCategory]);
 
   const [isFinished, setIsFinished] = useState(false);
-  // If any initialData is provided, start in learning mode. Otherwise start in list mode.
-  const [viewMode, setViewMode] = useState<'list' | 'detail' | 'learning'>(hasInitialData ? 'learning' : 'list');
+  const [viewMode, setViewMode] = useState<'list' | 'detail' | 'learning'>(
+    isTopicOnly ? 'detail' : hasInitialData ? 'learning' : 'list'
+  );
   const [lessonLevel, setLessonLevel] = useState(restoredLessonLevel ?? 1);
   const [topicOutline, setTopicOutline] = useState<string[]>([]);
   const [outlineLoading, setOutlineLoading] = useState(false);
 
+  const isLessonValid = (candidate: Lesson | null | undefined): candidate is Lesson => {
+    return !!candidate &&
+      Array.isArray(candidate.sections) &&
+      candidate.sections.length > 0 &&
+      Array.isArray(candidate.checkpoints);
+  };
+
+  const validLesson = isLessonValid(lesson) ? lesson : null;
+
+  useEffect(() => {
+    if (restoredLesson && !isLessonValid(restoredLesson)) {
+      console.warn('Restored lesson data is invalid or incomplete:', restoredLesson);
+      setLesson(null);
+      setLessonError('Saved lesson data is unavailable. Please start a new topic.');
+      setViewMode('list');
+    }
+  }, [restoredLesson]);
+
   // If restoring from history with checkpoint data, jump to that checkpoint
   useEffect(() => {
-    if (hasInitialData && restoredLesson && restoredCheckpointIndex !== undefined) {
+    if (hasInitialData && isLessonValid(restoredLesson) && restoredCheckpointIndex !== undefined) {
       setCurrentSectionIndex(restoredLesson.sections.length);
       setShowCheckpoint(true);
       setCurrentCheckpointIndex(restoredCheckpointIndex);
@@ -87,9 +114,16 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
     return () => window.removeEventListener('learn_topic', handleRemoteLesson);
   }, []);
 
+  useEffect(() => {
+    if (initialTopic && !lesson && !isTopicOnly) {
+      startLesson(initialTopic, restoredLessonLevel ?? 1, true);
+    }
+  }, [initialTopic, isTopicOnly]);
+
   const startLesson = async (selectedTopic: string, level: number = 1, skipDetail: boolean = false) => {
     setTopic(selectedTopic);
     setLesson(null);
+    setLessonError(null);
     setLessonLevel(level);
     setViewMode(skipDetail ? 'learning' : 'detail');
     setCurrentSectionIndex(0);
@@ -110,6 +144,9 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
       setLoading(true);
       try {
         const l = await generateLesson(selectedTopic, level);
+        if (!isLessonValid(l)) {
+          throw new Error('Generated lesson content is incomplete.');
+        }
         setLesson(l);
         saveToHistory('lesson', selectedTopic, {
           lesson: l,
@@ -118,7 +155,8 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
         });
       } catch (err) {
         console.error(err);
-        alert("Failed to load lesson. Please try again.");
+        setLessonError('Failed to load lesson content. Please try another topic.');
+        setLesson(null);
         setViewMode('list');
       } finally {
         setLoading(false);
@@ -129,9 +167,13 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
   const beginActualLearning = async () => {
     if (!topic) return;
     setLoading(true);
+    setLessonError(null);
     setViewMode('learning');
     try {
       const l = await generateLesson(topic, lessonLevel);
+      if (!isLessonValid(l)) {
+        throw new Error('Generated lesson content is incomplete.');
+      }
       setLesson(l);
       saveToHistory('lesson', topic, {
         lesson: l,
@@ -140,7 +182,8 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
       });
     } catch (err) {
       console.error(err);
-      alert("Failed to load lesson. Please try again.");
+      setLessonError('Failed to load lesson content. Please try another topic.');
+      setLesson(null);
       setViewMode('list');
     } finally {
       setLoading(false);
@@ -150,6 +193,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
   const handleBackToTopics = () => {
     setTopic(null);
     setLesson(null);
+    setLessonError(null);
     setViewMode('list');
     setChatHistory([]);
     setCurrentSectionIndex(0);
@@ -160,7 +204,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
   };
   const handleAskTutor = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!chatQuestion.trim() || !lesson || isAsking) return;
+    if (!chatQuestion.trim() || !validLesson || isAsking) return;
 
     const question = chatQuestion;
     setChatQuestion('');
@@ -168,8 +212,11 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
     setIsAsking(true);
 
     try {
-      const context = lesson.sections[currentSectionIndex].content;
-      const response = await askLessonClarification(lesson.topic, question, context);
+      const context = validLesson.sections[currentSectionIndex]?.content;
+      if (!context) {
+        throw new Error('Lesson content unavailable for clarification.');
+      }
+      const response = await askLessonClarification(validLesson.topic, question, context);
       setChatHistory(prev => [...prev, { role: 'ai', text: response }]);
     } catch (err) {
       setChatHistory(prev => [...prev, { role: 'ai', text: "I'm sorry, I couldn't process that query. Please try again." }]);
@@ -179,12 +226,12 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
   };
 
   const handleCheckpointSubmit = async () => {
-    if (!lesson || !userAnswer.trim() || isEvaluating) return;
+    if (!validLesson || !userAnswer.trim() || isEvaluating) return;
     setIsEvaluating(true);
     try {
-      const checkpoint = lesson.checkpoints[currentCheckpointIndex];
+      const checkpoint = validLesson.checkpoints[currentCheckpointIndex];
       const feedback = await evaluateLessonAnswer(
-        lesson.topic,
+        validLesson.topic,
         checkpoint.question,
         userAnswer,
         checkpoint.correctAnswer
@@ -202,8 +249,8 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
   };
 
   const nextSection = () => {
-    if (!lesson) return;
-    if (currentSectionIndex === lesson.sections.length - 1) {
+    if (!validLesson) return;
+    if (currentSectionIndex === validLesson.sections.length - 1) {
       setShowCheckpoint(true);
     } else {
       setCurrentSectionIndex(prev => prev + 1);
@@ -219,11 +266,11 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
   };
 
   const nextCheckpoint = () => {
-    if (!lesson) return;
-    if (currentCheckpointIndex < lesson.checkpoints.length - 1) {
+    if (!validLesson) return;
+    if (currentCheckpointIndex < validLesson.checkpoints.length - 1) {
       // Save current progress to history
-      saveToHistory('lesson', topic || lesson.topic, {
-        lesson,
+      saveToHistory('lesson', topic || validLesson.topic, {
+        lesson: validLesson,
         lastCheckpointIndex: currentCheckpointIndex + 1,
         lessonLevel
       });
@@ -238,9 +285,9 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
       updateGenericStats({ totalTimeMinutes: 20 });
       checkAchievements();
       // Save completed lesson to history
-      saveToHistory('lesson', topic || lesson.topic, {
-        lesson,
-        lastCheckpointIndex: lesson.checkpoints.length,
+      saveToHistory('lesson', topic || validLesson.topic, {
+        lesson: validLesson,
+        lastCheckpointIndex: validLesson.checkpoints.length,
         lessonLevel
       });
       window.dispatchEvent(new Event('xp_updated'));
@@ -257,9 +304,9 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
       setShowCheckpoint(false);
     }
     // Save progress when going back
-    if (lesson) {
-      saveToHistory('lesson', topic || lesson.topic, {
-        lesson,
+    if (validLesson) {
+      saveToHistory('lesson', topic || validLesson.topic, {
+        lesson: validLesson,
         lastCheckpointIndex: Math.max(0, currentCheckpointIndex - 1),
         lessonLevel
       });
@@ -269,6 +316,24 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
   const formatMarkdown = (text: string) => {
     return text.replace(/\\n/g, '\n');
   };
+
+  if (lessonError) {
+    return (
+      <div className="max-w-4xl mx-auto py-20 px-4 text-center">
+        <div className="inline-flex items-center justify-center w-16 h-16 mx-auto rounded-full bg-rose-100 text-rose-600 mb-6">
+          <AlertCircle size={28} />
+        </div>
+        <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-4">Lesson unavailable</h2>
+        <p className="text-slate-500 dark:text-slate-400 mb-8">{lessonError}</p>
+        <button
+          onClick={handleBackToTopics}
+          className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-black hover:bg-indigo-700 transition-all"
+        >
+          Back to Topics
+        </button>
+      </div>
+    );
+  }
 
   if (viewMode === 'list') {
     return (
@@ -507,7 +572,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
             <p className="text-slate-500 dark:text-slate-400 font-medium italic">"Making numbers simple, one step at a time!"</p>
           </div>
         </div>
-      ) : lesson && (
+      ) : validLesson && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           {/* Main Lesson Content */}
           <div className="lg:col-span-2 space-y-8 pb-32">
@@ -526,10 +591,10 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
                         {currentSectionIndex + 1}
                       </div>
                       <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
-                        {lesson.sections[currentSectionIndex].title}
+                        {validLesson.sections[currentSectionIndex].title}
                       </h3>
                     </div>
-                    <TTSButton text={`${lesson.sections[currentSectionIndex].title}. ${lesson.sections[currentSectionIndex].content}`} />
+                    <TTSButton text={`${validLesson.sections[currentSectionIndex].title}. ${validLesson.sections[currentSectionIndex].content}`} />
                   </div>
 
                   <div className="prose prose-invert max-w-none prose-p:text-slate-200 prose-p:leading-relaxed prose-headings:font-black prose-strong:text-indigo-400">
@@ -537,11 +602,11 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
                       remarkPlugins={[remarkMath]}
                       rehypePlugins={[rehypeKatex]}
                     >
-                      {formatMarkdown(lesson.sections[currentSectionIndex].content)}
+                      {formatMarkdown(validLesson.sections[currentSectionIndex].content)}
                     </ReactMarkdown>
                   </div>
 
-                  <Diagram svg={lesson.sections[currentSectionIndex].diagramSvg} />
+                  <Diagram svg={validLesson.sections[currentSectionIndex].diagramSvg} />
 
                   <div className="mt-12 pt-8 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center">
                     <button
@@ -556,7 +621,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
                       onClick={nextSection}
                       className="flex items-center gap-2 px-8 py-4 bg-indigo-600 dark:bg-indigo-500 text-white rounded-2xl font-black shadow-xl shadow-indigo-200 dark:shadow-none hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all hover:translate-x-1"
                     >
-                      {currentSectionIndex === lesson.sections.length - 1 ? 'Go to Checkpoint' : 'Continue Lesson'}
+                      {currentSectionIndex === validLesson.sections.length - 1 ? 'Go to Checkpoint' : 'Continue Lesson'}
                       <ChevronRight size={20} />
                     </button>
                   </div>
@@ -576,7 +641,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
                           <CheckCircle2 size={32} className="text-indigo-200 dark:text-indigo-400" />
                           <h3 className="text-xl md:text-2xl font-black uppercase tracking-tight">Checkpoint {currentCheckpointIndex + 1}</h3>
                         </div>
-                        <TTSButton text={lesson.checkpoints[currentCheckpointIndex].question} className="bg-white/10 text-white hover:bg-white/20 self-end md:self-auto" />
+                        <TTSButton text={validLesson.checkpoints[currentCheckpointIndex].question} className="bg-white/10 text-white hover:bg-white/20 self-end md:self-auto" />
                       </div>
 
                       <div className="p-6 md:p-8 bg-white/10 dark:bg-indigo-900/20 backdrop-blur-md rounded-[2rem] border border-white/20 dark:border-indigo-500/30">
@@ -585,7 +650,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
                             remarkPlugins={[remarkMath]}
                             rehypePlugins={[rehypeKatex]}
                           >
-                            {formatMarkdown(lesson.checkpoints[currentCheckpointIndex].question)}
+                            {formatMarkdown(validLesson.checkpoints[currentCheckpointIndex].question)}
                           </ReactMarkdown>
                         </div>
                       </div>
@@ -650,7 +715,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
                             onClick={checkpointFeedback.isCorrect ? nextCheckpoint : () => setCheckpointFeedback(null)}
                             className="w-full py-4 bg-white dark:bg-slate-900 text-slate-800 dark:text-white font-black rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-lg"
                           >
-                            {checkpointFeedback.isCorrect ? (currentCheckpointIndex === lesson.checkpoints.length - 1 ? 'Complete Lesson' : 'Next Checkpoint') : 'Try Again'}
+                            {checkpointFeedback.isCorrect ? (currentCheckpointIndex === validLesson.checkpoints.length - 1 ? 'Complete Lesson' : 'Next Checkpoint') : 'Try Again'}
                           </button>
                         </motion.div>
                       )}
@@ -760,7 +825,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
                 <div>
                   <h4 className="text-xs font-black text-emerald-900 dark:text-emerald-100 uppercase tracking-widest">Progress</h4>
                   <p className="text-lg font-black text-emerald-600 dark:text-emerald-400">
-                    {Math.round(((currentSectionIndex + (showCheckpoint ? 1 : 0)) / (lesson.sections.length + 1)) * 100)}%
+                    {Math.round(((currentSectionIndex + (showCheckpoint ? 1 : 0)) / (validLesson.sections.length + 1)) * 100)}%
                   </p>
                 </div>
               </div>
@@ -773,7 +838,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
         <Whiteboard onClose={() => setShowWhiteboard(false)} />
       )}
 
-      {lesson && (
+      {validLesson && (
         <button
           onClick={() => {
             if (!showWhiteboard) {
@@ -798,6 +863,10 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
             const nextLevel = lessonLevel + 1;
             setIsFinished(false);
             if (topic) startLesson(topic, nextLevel, true);
+          }}
+          onChallenge={() => {
+            setIsFinished(false);
+            if (topic) onChallenge?.(topic);
           }}
         />
       )}

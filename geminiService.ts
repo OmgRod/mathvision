@@ -1,6 +1,7 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { MathResult, QuizQuestion, QuizFeedback, Lesson } from "./types";
+import { findBestMatchingTopic } from './constants';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
@@ -170,6 +171,14 @@ export const generateQuizQuestion = async (topic: string): Promise<QuizQuestion>
   }
 };
 
+export const inferBestLearningTopic = (text: string, result?: MathResult): string | null => {
+  const candidateText = [text, result ? result.parts.map((part) => {
+    const stepMath = part.steps?.map((step) => step.math).join(' ') || '';
+    return [part.title || '', part.explanation || '', part.finalAnswer || '', stepMath].join(' ');
+  }).join(' '): ''].filter(Boolean).join(' ');
+  return findBestMatchingTopic(candidateText);
+};
+
 export const evaluateStep = async (question: string, expectedMath: string, userMath: string, finalAnswer?: string): Promise<QuizFeedback> => {
   const prompt = `
     The math question is: "${question}"
@@ -183,6 +192,8 @@ export const evaluateStep = async (question: string, expectedMath: string, userM
     2. Is the user's expression (or its direct result) already the FINAL intended answer for the entire question?
     
     TONE: Ensure the message matches the linguistic complexity of the topic. Encourage younger students with simpler praise; use technical confirmation for advanced topics.
+    
+    IMPORTANT: Under no circumstances should you provide the exact final answer, the expected next step expression, or the complete solution. If the user is wrong, give guidance or a conceptual hint instead of the answer.
     
     Provide your evaluation in JSON:
     - isCorrect (boolean): true if it matches the next step OR if it's the final answer.
@@ -297,6 +308,7 @@ export const evaluateLessonAnswer = async (topic: string, question: string, user
     
     Evaluate if the student's answer is conceptually correct, even if not phrased exactly like the reference.
     Provide constructive feedback. Use LaTeX for math ($$formula$$).
+    IMPORTANT: Do not reveal the exact correct answer or solution. If the answer is wrong, offer a hint or explanation that helps the student understand the concept without giving it away.
   `;
 
   try {

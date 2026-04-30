@@ -17,6 +17,46 @@ export const getTopicCategories = (topic: MathTopic) => normalizeTopicDimension(
 export const formatTopicLevel = (topic: MathTopic) => getTopicLevels(topic).join(', ');
 export const formatTopicCategory = (topic: MathTopic) => getTopicCategories(topic).join(', ');
 
+export const findBestMatchingTopic = (query: string): string | null => {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return null;
+  const tokens = Array.from(new Set((normalizedQuery.match(/\b[a-z0-9]+\b/g) || []).map((token) => token.toLowerCase())));
+  if (tokens.length === 0) return null;
+
+  const scoreTopic = (topic: MathTopic) => {
+    const haystack = [topic.name, topic.description, ...getTopicCategories(topic), ...getTopicLevels(topic)]
+      .join(' ')
+      .toLowerCase();
+
+    let score = 0;
+    if (haystack.includes(topic.name.toLowerCase())) {
+      score += 10;
+    }
+    for (const token of tokens) {
+      if (haystack.includes(token)) {
+        score += token.length > 4 ? 3 : 1;
+      }
+    }
+    return score;
+  };
+
+  let bestTopic: MathTopic | null = null;
+  let bestScore = 0;
+  for (const topic of PRACTICE_TOPICS) {
+    const score = scoreTopic(topic);
+    if (score > bestScore) {
+      bestScore = score;
+      bestTopic = topic;
+    }
+  }
+
+  if (!bestTopic || bestScore < 6) {
+    return null;
+  }
+
+  return bestTopic.name;
+};
+
 /**
  * @deprecated Use PRACTICE_TOPICS as source of truth.
  * This is kept for backward compatibility but is empty.

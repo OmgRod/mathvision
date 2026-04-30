@@ -9,13 +9,15 @@ interface CelebrationOverlayProps {
   message: string;
   onHome: () => void;
   onNext?: () => void;
+  onChallenge?: () => void;
 }
 
 export const CelebrationOverlay: React.FC<CelebrationOverlayProps> = ({ 
   xpEarned, 
   message, 
   onHome, 
-  onNext 
+  onNext,
+  onChallenge,
 }) => {
   useEffect(() => {
     const duration = 3 * 1000;
@@ -77,7 +79,7 @@ export const CelebrationOverlay: React.FC<CelebrationOverlayProps> = ({
           <div className="text-5xl font-black text-slate-900 dark:text-white">+{xpEarned} XP</div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className={`grid gap-4 ${onChallenge ? 'grid-cols-3' : 'grid-cols-2'}`}>
           <button 
             onClick={onHome}
             className="flex items-center justify-center gap-2 px-8 py-5 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white font-black hover:bg-slate-200 dark:hover:bg-slate-600 transition-all active:scale-95"
@@ -92,6 +94,14 @@ export const CelebrationOverlay: React.FC<CelebrationOverlayProps> = ({
             CONTINUE
             <ChevronRight size={20} />
           </button>
+          {onChallenge && (
+            <button
+              onClick={onChallenge}
+              className="flex items-center justify-center gap-2 px-8 py-5 rounded-2xl bg-emerald-600 dark:bg-emerald-500 text-white font-black hover:bg-emerald-700 dark:hover:bg-emerald-400 transition-all active:scale-95 shadow-xl shadow-emerald-200 dark:shadow-none"
+            >
+              CHALLENGE
+            </button>
+          )}
         </div>
       </motion.div>
     </motion.div>

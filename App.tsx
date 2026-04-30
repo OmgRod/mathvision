@@ -11,7 +11,7 @@ import { ProfilePanel } from './components/ProfilePanel';
 import { Toast } from './components/Toast';
 import { HelpModal } from './components/HelpModal';
 import { ProcessingState, HistoryItem } from './types';
-import { solveMathEquation } from './geminiService';
+import { solveMathEquation, inferBestLearningTopic } from './geminiService';
 import { saveToHistory } from './historyService';
 import { updateGenericStats, incrementHelpOpened, incrementPhotoInputsUsed } from './userService';
 import { checkAchievements } from './achievementService';
@@ -33,12 +33,20 @@ const App: React.FC = () => {
       setPreLoadedLesson({ topic: e.detail });
       setMode('learn');
     };
+
+    const handlePracticeTopic = (e: any) => {
+      setPreLoadedPractice({ topic: e.detail });
+      setPreLoadedLesson(null);
+      setMode('practice');
+    };
     
     window.addEventListener('navigate_profile', handleXPNavigate);
     window.addEventListener('learn_topic', handleLearnTopic);
+    window.addEventListener('practice_topic', handlePracticeTopic);
     return () => {
       window.removeEventListener('navigate_profile', handleXPNavigate);
       window.removeEventListener('learn_topic', handleLearnTopic);
+      window.removeEventListener('practice_topic', handlePracticeTopic);
     };
   }, []);
   const [textInput, setTextInput] = useState('');
@@ -50,8 +58,9 @@ const App: React.FC = () => {
     result: null,
   });
 
-  const [preLoadedPractice, setPreLoadedPractice] = useState<{ topic: string, data: any } | null>(null);
+  const [preLoadedPractice, setPreLoadedPractice] = useState<{ topic: string, data?: any } | null>(null);
   const [preLoadedLesson, setPreLoadedLesson] = useState<any>(null);
+  const [recommendedLearnTopic, setRecommendedLearnTopic] = useState<string | null>(null);
   const [toast, setToast] = useState<{ achievement: any } | null>(null);
   const [showHelp, setShowHelp] = useState(false);
 
@@ -111,6 +120,11 @@ const App: React.FC = () => {
     setTextInput('');
     setMimeType('');
     setState({ isProcessing: false, error: null, result: null });
+    setRecommendedLearnTopic(null);
+  };
+
+  const goToLearnTopic = (topic: string) => {
+    window.dispatchEvent(new CustomEvent('learn_topic', { detail: topic }));
   };
 
   const handleSolve = async () => {
@@ -124,6 +138,7 @@ const App: React.FC = () => {
         mimeType: mimeType || undefined 
       });
       setState({ isProcessing: false, error: null, result });
+      setRecommendedLearnTopic(inferBestLearningTopic(textInput || '', result));
       
       // Update stats and check achievements
       updateGenericStats({ totalQuestionsSolved: 1 });
@@ -391,6 +406,23 @@ const App: React.FC = () => {
               {state.result && (
                 <div id="result-section">
                   <MathSolution result={state.result} />
+                  {recommendedLearnTopic && (
+                    <div className="mt-8 p-6 rounded-[2rem] bg-indigo-50 dark:bg-slate-900 border border-indigo-100 dark:border-slate-700 shadow-2xl shadow-indigo-100/30 dark:shadow-none">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                          <p className="text-sm uppercase tracking-[0.3em] font-black text-indigo-600 dark:text-indigo-400 mb-2">Keep learning</p>
+                          <h3 className="text-2xl font-black text-slate-900 dark:text-white">Want a similar topic to practice?</h3>
+                          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 max-w-2xl">Start with a matching lesson in Learn, then complete a same-topic challenge when you finish.</p>
+                        </div>
+                        <button
+                          onClick={() => goToLearnTopic(recommendedLearnTopic)}
+                          className="inline-flex items-center justify-center whitespace-nowrap rounded-2xl bg-indigo-600 text-white px-6 py-4 font-black text-sm hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 dark:shadow-none"
+                        >
+                          Explore {recommendedLearnTopic}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -454,7 +486,7 @@ const App: React.FC = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
             >
-              <PracticePanel initialData={preLoadedPractice} />
+              <PracticePanel initialData={preLoadedPractice ?? undefined} />
             </motion.div>
           )}
 
@@ -465,7 +497,14 @@ const App: React.FC = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
             >
-              <LearnPanel initialData={preLoadedLesson} />
+              <LearnPanel
+                initialData={preLoadedLesson}
+                onChallenge={(topic) => {
+                  setPreLoadedPractice({ topic });
+                  setPreLoadedLesson(null);
+                  setMode('practice');
+                }}
+              />
             </motion.div>
           )}
 
