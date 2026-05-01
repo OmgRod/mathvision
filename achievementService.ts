@@ -343,16 +343,6 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     check: (p) => p.streak >= 21
   },
   {
-    id: 'streak_30_bronze',
-    title: 'Monthlong Momentum',
-    description: 'Keep a 30-day study streak',
-    icon: 'Flame',
-    xpReward: 2200,
-    target: 30,
-    currentValue: (p) => p.streak,
-    check: (p) => p.streak >= 30
-  },
-  {
     id: 'solve_2',
     title: 'Double Down',
     description: 'Solve 2 math problems',
