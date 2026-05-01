@@ -10,6 +10,7 @@ interface CelebrationOverlayProps {
   onHome: () => void;
   onNext?: () => void;
   onChallenge?: () => void;
+  onPlaylistNext?: () => void;
 }
 
 export const CelebrationOverlay: React.FC<CelebrationOverlayProps> = ({ 
@@ -79,27 +80,50 @@ export const CelebrationOverlay: React.FC<CelebrationOverlayProps> = ({
           <div className="text-5xl font-black text-slate-900 dark:text-white">+{xpEarned} XP</div>
         </div>
 
-        <div className={`grid gap-4 ${onChallenge ? 'grid-cols-3' : 'grid-cols-2'}`}>
-          <button 
-            onClick={onHome}
-            className="flex items-center justify-center gap-2 px-8 py-5 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white font-black hover:bg-slate-200 dark:hover:bg-slate-600 transition-all active:scale-95"
-          >
-            <Home size={20} />
-            HOME
-          </button>
-          <button 
-            onClick={onNext}
-            className="flex items-center justify-center gap-2 px-8 py-5 rounded-2xl bg-indigo-600 dark:bg-indigo-500 text-white font-black hover:bg-indigo-700 dark:hover:bg-indigo-400 transition-all active:scale-95 shadow-xl shadow-indigo-200 dark:shadow-none"
-          >
-            CONTINUE
-            <ChevronRight size={20} />
-          </button>
-          {onChallenge && (
-            <button
-              onClick={onChallenge}
-              className="flex items-center justify-center gap-2 px-8 py-5 rounded-2xl bg-emerald-600 dark:bg-emerald-500 text-white font-black hover:bg-emerald-700 dark:hover:bg-emerald-400 transition-all active:scale-95 shadow-xl shadow-emerald-200 dark:shadow-none"
+        <div className="flex flex-col gap-4">
+          {onPlaylistNext && (
+            <button 
+              onClick={onPlaylistNext}
+              className="flex items-center justify-center gap-3 px-8 py-6 rounded-3xl bg-indigo-600 text-white font-black hover:bg-indigo-700 transition-all active:scale-95 shadow-2xl shadow-indigo-200 dark:shadow-none"
             >
-              CHALLENGE
+              <ChevronRight size={24} />
+              NEXT TOPIC IN PLAYLIST
+            </button>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <button 
+              onClick={onHome}
+              className="flex items-center justify-center gap-2 px-8 py-5 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white font-black hover:bg-slate-200 dark:hover:bg-slate-600 transition-all active:scale-95"
+            >
+              <Home size={20} />
+              HOME
+            </button>
+            
+            {onChallenge ? (
+              <button
+                onClick={onChallenge}
+                className="flex items-center justify-center gap-2 px-8 py-5 rounded-2xl bg-emerald-600 dark:bg-emerald-500 text-white font-black hover:bg-emerald-700 dark:hover:bg-emerald-400 transition-all active:scale-95 shadow-xl shadow-emerald-200 dark:shadow-none"
+              >
+                CHALLENGE
+              </button>
+            ) : (
+              <button 
+                onClick={onNext}
+                className="flex items-center justify-center gap-2 px-8 py-5 rounded-2xl bg-slate-900 dark:bg-slate-800 text-white font-black hover:bg-black dark:hover:bg-slate-950 transition-all active:scale-95"
+              >
+                {onPlaylistNext ? 'REPLAY' : 'CONTINUE'}
+                <ChevronRight size={20} />
+              </button>
+            )}
+          </div>
+
+          {onPlaylistNext && onNext && (
+            <button 
+              onClick={onNext}
+              className="text-xs font-black text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors uppercase tracking-[0.2em]"
+            >
+              Or stay here to level up
             </button>
           )}
         </div>

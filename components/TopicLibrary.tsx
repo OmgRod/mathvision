@@ -1,22 +1,31 @@
 import React, { useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { Search, GraduationCap, Filter, ChevronRight } from 'lucide-react';
+import { Search, GraduationCap, Filter, ChevronRight, RefreshCcw, Award } from 'lucide-react';
+import { ExamPathsPanel } from './ExamPathsPanel';
 import { MathTopic, getTopicCategories, getTopicLevels, formatTopicLevel } from '../constants';
+import { getDueItems, SrsItem } from '../srsService';
 
 interface TopicLibraryProps {
   topics: MathTopic[];
   onTopicSelect: (topic: string) => void;
+  onPathSelect?: (path: any) => void;
   emptyMessage?: string;
 }
 
 export const TopicLibrary: React.FC<TopicLibraryProps> = ({
   topics,
   onTopicSelect,
+  onPathSelect,
   emptyMessage = 'No topics matched your search criteria.',
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLevel, setSelectedLevel] = useState<string>('All');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [dueItems, setDueItems] = useState<SrsItem[]>([]);
+
+  React.useEffect(() => {
+    setDueItems(getDueItems());
+  }, []);
 
   const levels = useMemo<string[]>(() => ['All', ...Array.from(new Set(topics.flatMap(getTopicLevels)))], [topics]);
   const categories = useMemo<string[]>(() => ['All', ...Array.from(new Set(topics.flatMap(getTopicCategories)))], [topics]);
@@ -92,6 +101,43 @@ export const TopicLibrary: React.FC<TopicLibraryProps> = ({
           </div>
         </div>
       </div>
+      
+      <ExamPathsPanel 
+        onTopicSelect={onTopicSelect} 
+        onPathSelect={(path) => {
+          if (onPathSelect) onPathSelect(path);
+          window.dispatchEvent(new CustomEvent('select_exam_path', { detail: path }));
+        }} 
+      />
+
+
+      {dueItems.length > 0 && (
+        <div className="bg-indigo-600 dark:bg-indigo-700 p-6 md:p-8 rounded-[2rem] text-white shadow-xl shadow-indigo-600/20 mb-8">
+          <div className="flex items-center gap-3 mb-6">
+            <RefreshCcw className="text-indigo-200 dark:text-indigo-300" size={24} />
+            <h3 className="text-xl font-black uppercase tracking-widest">Due for Review</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {dueItems.map(item => (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                key={item.topic}
+                onClick={() => onTopicSelect(item.topic)}
+                className="p-5 bg-white/10 hover:bg-white/20 rounded-3xl border border-white/20 transition-all text-left flex justify-between items-center group"
+              >
+                <div>
+                  <div className="font-bold text-lg">{item.topic}</div>
+                  <div className="text-xs text-indigo-200 mt-1 uppercase font-bold tracking-wider">Level {item.repetitions} Mastery</div>
+                </div>
+                <div className="p-2 bg-white/10 rounded-xl group-hover:bg-white/20 transition-colors">
+                  <ChevronRight size={20} className="text-indigo-100" />
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-12 transition-colors">
         {groupedTopics.map(([category, topicGroup]) => (

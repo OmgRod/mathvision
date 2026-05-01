@@ -512,6 +512,114 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     currentValue: (p) => p.totalTimeMinutes,
     check: (p) => p.totalTimeMinutes >= 2880
   },
+  {
+    id: 'sat_master',
+    title: 'SAT Conqueror',
+    description: 'Complete all topics in the SAT Math Mastery path',
+    icon: 'Sword',
+    xpReward: 2500,
+    target: 1,
+    currentValue: (p) => {
+      const satTopics = ["Solving Linear Equations", "Linear Inequalities (Solving)", "Percentage of an Amount", "Ratio Sharing", "Mean, Median, and Mode", "Factoring Quadratics (a=1)", "The Quadratic Formula", "Right-Angled Trig (SOH CAH TOA)", "Equation of a Circle (x-a)^2 + (y-b)^2"];
+      const completed = new Set([...p.completedTopics, ...p.masteredLessons]);
+      return satTopics.every(t => completed.has(t)) ? 1 : 0;
+    },
+    check: (p) => {
+      const satTopics = ["Solving Linear Equations", "Linear Inequalities (Solving)", "Percentage of an Amount", "Ratio Sharing", "Mean, Median, and Mode", "Factoring Quadratics (a=1)", "The Quadratic Formula", "Right-Angled Trig (SOH CAH TOA)", "Equation of a Circle (x-a)^2 + (y-b)^2"];
+      const completed = new Set([...p.completedTopics, ...p.masteredLessons]);
+      return satTopics.every(t => completed.has(t));
+    }
+  },
+  {
+    id: 'ap_calc_master',
+    title: 'Calculus Crusader',
+    description: 'Complete all topics in the AP Calculus AB track',
+    icon: 'Zap',
+    xpReward: 3000,
+    target: 1,
+    currentValue: (p) => {
+      const calcTopics = ["Introduction to Limits", "Differentiation: Power Rule", "The Chain Rule", "The Product Rule", "Stationary Points (Max/Min)", "Integration: Fundamentals", "Definite Integrals (Area Under Curve)", "Integration by Substitution"];
+      const completed = new Set([...p.completedTopics, ...p.masteredLessons]);
+      return calcTopics.every(t => completed.has(t)) ? 1 : 0;
+    },
+    check: (p) => {
+      const calcTopics = ["Introduction to Limits", "Differentiation: Power Rule", "The Chain Rule", "The Product Rule", "Stationary Points (Max/Min)", "Integration: Fundamentals", "Definite Integrals (Area Under Curve)", "Integration by Substitution"];
+      const completed = new Set([...p.completedTopics, ...p.masteredLessons]);
+      return calcTopics.every(t => completed.has(t));
+    }
+  },
+  {
+    id: 'gcse_higher_master',
+    title: 'GCSE High Achiever',
+    description: 'Complete all topics in the GCSE Maths Higher path',
+    icon: 'Target',
+    xpReward: 2000,
+    target: 1,
+    currentValue: (p) => {
+      const gcseTopics = ["Recurring Decimals to Fractions", "Upper and Lower Bounds", "Factoring Quadratics (a>1)", "Sine Rule (Sides and Angles)", "Circle Theorems: Alternate Segment", "Probability Trees (Independent)", "Histograms (Frequency Density)", "Vector Geometry in 3D"];
+      const completed = new Set([...p.completedTopics, ...p.masteredLessons]);
+      return gcseTopics.every(t => completed.has(t)) ? 1 : 0;
+    },
+    check: (p) => {
+      const gcseTopics = ["Recurring Decimals to Fractions", "Upper and Lower Bounds", "Factoring Quadratics (a>1)", "Sine Rule (Sides and Angles)", "Circle Theorems: Alternate Segment", "Probability Trees (Independent)", "Histograms (Frequency Density)", "Vector Geometry in 3D"];
+      const completed = new Set([...p.completedTopics, ...p.masteredLessons]);
+      return gcseTopics.every(t => completed.has(t));
+    }
+  },
+  {
+    id: 'aqa_further_master',
+    title: 'AQA Further Ace',
+    description: 'Complete all topics in the AQA GCSE Further Maths path',
+    icon: 'Sword',
+    xpReward: 2800,
+    target: 1,
+    currentValue: (p) => {
+      const topics = ["Recurring Decimals to Fractions", "Factoring Quadratics (a>1)", "Binomial Expansion (Positive n)", "Differentiation: Stationary Points", "Intro to Matrices (Addition/Subtraction)", "Matrix Multiplication (2x2)", "2D Transformations (Rotation/Reflections)", "Sine Rule (Sides and Angles)"];
+      const completed = new Set([...p.completedTopics, ...p.masteredLessons]);
+      return topics.every(t => completed.has(t)) ? 1 : 0;
+    },
+    check: (p) => {
+      const topics = ["Recurring Decimals to Fractions", "Factoring Quadratics (a>1)", "Binomial Expansion (Positive n)", "Differentiation: Stationary Points", "Intro to Matrices (Addition/Subtraction)", "Matrix Multiplication (2x2)", "2D Transformations (Rotation/Reflections)", "Sine Rule (Sides and Angles)"];
+      const completed = new Set([...p.completedTopics, ...p.masteredLessons]);
+      return topics.every(t => completed.has(t));
+    }
+  },
+  {
+    id: 'primary_excellence_master',
+    title: 'Primary Prodigy',
+    description: 'Complete all topics in the 11+ / Primary Excellence path',
+    icon: 'GraduationCap',
+    xpReward: 1500,
+    target: 1,
+    currentValue: (p) => {
+      const topics = ["Place Value and Rounding", "Long Addition and Subtraction", "Money Mathematics", "Mean, Median, and Mode", "Area of 2D Shapes", "Understanding Roman Numerals", "Reading Coordinates", "Basic Measurement and Units"];
+      const completed = new Set([...p.completedTopics, ...p.masteredLessons]);
+      return topics.every(t => completed.has(t)) ? 1 : 0;
+    },
+    check: (p) => {
+      const topics = ["Place Value and Rounding", "Long Addition and Subtraction", "Money Mathematics", "Mean, Median, and Mode", "Area of 2D Shapes", "Understanding Roman Numerals", "Reading Coordinates", "Basic Measurement and Units"];
+      const completed = new Set([...p.completedTopics, ...p.masteredLessons]);
+      return topics.every(t => completed.has(t));
+    }
+  },
+  {
+    id: 'a_level_further_master',
+    title: 'Infinite Explorer',
+    description: 'Complete all topics in the A-Level Further Maths path',
+    icon: 'Zap',
+    xpReward: 5000,
+    target: 1,
+    currentValue: (p) => {
+      const topics = ["Intro to i (Imaginary Numbers)", "Argand Diagrams", "Determinant of 2x2 and 3x3 Matrices", "Inverse of 2x2 Matrices", "Mathematical Induction Proofs", "Maclaurin and Taylor Series", "The Discriminant (b^2 - 4ac)", "Hyperbolic Functions (Intro)"];
+      const completed = new Set([...p.completedTopics, ...p.masteredLessons]);
+      return topics.every(t => completed.has(t)) ? 1 : 0;
+    },
+    check: (p) => {
+      const topics = ["Intro to i (Imaginary Numbers)", "Argand Diagrams", "Determinant of 2x2 and 3x3 Matrices", "Inverse of 2x2 Matrices", "Mathematical Induction Proofs", "Maclaurin and Taylor Series", "The Discriminant (b^2 - 4ac)", "Hyperbolic Functions (Intro)"];
+      const completed = new Set([...p.completedTopics, ...p.masteredLessons]);
+      return topics.every(t => completed.has(t));
+    }
+  },
 ];
 
 export const checkAchievements = () => {

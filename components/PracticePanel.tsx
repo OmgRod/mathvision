@@ -23,9 +23,10 @@ import { TTSButton } from './TTSButton';
 import { Whiteboard } from './Whiteboard';
 import { CalculatorModal } from './CalculatorModal';
 import { CelebrationOverlay } from './CelebrationOverlay';
-import { addXP, updateGenericStats, addCompletedTopic, incrementHintsUsed, incrementWhiteboardOpens } from '../userService';
+import { addXP, updateGenericStats, addCompletedTopic, incrementHintsUsed, incrementWhiteboardOpens, getUserProfile } from '../userService';
 import { checkAchievements } from '../achievementService';
 import { saveToHistory } from '../historyService';
+import { updateSrsItem } from '../srsService';
 import { generateQuizQuestion, evaluateStep } from '../geminiService';
 import { QuizQuestion, QuizFeedback } from '../types';
 import ReactMarkdown from 'react-markdown';
@@ -45,7 +46,11 @@ const wrapMathIfNeeded = (value: string) => {
   return trimmed;
 };
 
-export const PracticePanel: React.FC<{ initialData?: { topic: string, data?: QuizQuestion } }> = ({ initialData }) => {
+export const PracticePanel: React.FC<{ 
+  initialData?: { topic: string, data?: QuizQuestion },
+  playlistContext?: { pathId: string, topicNames: string[], currentIndex: number } | null,
+  onPlaylistNext?: () => void
+}> = ({ initialData, playlistContext, onPlaylistNext }) => {
   const [topic, setTopic] = useState<string | null>(initialData?.topic || null);
   const [customTopic, setCustomTopic] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
@@ -98,7 +103,8 @@ export const PracticePanel: React.FC<{ initialData?: { topic: string, data?: Qui
     setLoading(true);
     const expectedStep = question.correctSteps[currentStepIndex];
     try {
-      const result = await evaluateStep(question.question, expectedStep.math, userAnswer, question.finalAnswer);
+      const profile = getUserProfile();
+      const result = await evaluateStep(question.question, expectedStep.math, userAnswer, question.finalAnswer, profile.socraticMode);
       setFeedback(result);
       
       if (result.isCorrect) {
@@ -126,6 +132,14 @@ export const PracticePanel: React.FC<{ initialData?: { topic: string, data?: Qui
       addCompletedTopic(topic!);
       updateGenericStats({ totalQuestionsSolved: 1, totalTimeMinutes: 5 });
       checkAchievements();
+      
+      // Calculate quality of recall for SRS (0-5)
+      let quality = 5;
+      if (hintsUsed === 1) quality = 4;
+      else if (hintsUsed === 2) quality = 3;
+      else if (hintsUsed > 2) quality = 2;
+      updateSrsItem(topic!, quality);
+      
       window.dispatchEvent(new Event('xp_updated'));
       setIsFinished(true);
     } else {
@@ -185,7 +199,10 @@ export const PracticePanel: React.FC<{ initialData?: { topic: string, data?: Qui
         </div>
 
         <div className="space-y-12 transition-colors">
-          <TopicLibrary topics={PRACTICE_TOPICS} onTopicSelect={startPractice} />
+          <TopicLibrary 
+            topics={PRACTICE_TOPICS} 
+            onTopicSelect={startPractice} 
+          />
 
           {!showCustomInput ? (
               <button
@@ -499,6 +516,7 @@ export const PracticePanel: React.FC<{ initialData?: { topic: string, data?: Qui
             setIsFinished(false);
             startPractice(topic!);
           }}
+          onPlaylistNext={onPlaylistNext}
         />
       )}
     </div>

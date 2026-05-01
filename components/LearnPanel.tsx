@@ -12,7 +12,7 @@ import { TopicLibrary } from './TopicLibrary';
 import { Whiteboard } from './Whiteboard';
 import { CalculatorModal } from './CalculatorModal';
 import { CelebrationOverlay } from './CelebrationOverlay';
-import { addXP, updateGenericStats, addMastery, incrementWhiteboardOpens } from '../userService';
+import { addXP, updateGenericStats, addMastery, incrementWhiteboardOpens, getUserProfile } from '../userService';
 import { checkAchievements } from '../achievementService';
 import { saveToHistory } from '../historyService';
 import { motion, AnimatePresence } from 'motion/react';
@@ -22,7 +22,12 @@ import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import { MathInput } from './MathInput';
 
-export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; lastCheckpointIndex?: number; lessonLevel?: number } | { topic: string }; onChallenge?: (topic: string) => void }> = ({ initialData, onChallenge }) => {
+export const LearnPanel: React.FC<{ 
+  initialData?: Lesson | { lesson: Lesson; lastCheckpointIndex?: number; lessonLevel?: number } | { topic: string }; 
+  onChallenge?: (topic: string) => void;
+  playlistContext?: { pathId: string, topicNames: string[], currentIndex: number } | null,
+  onPlaylistNext?: () => void
+}> = ({ initialData, onChallenge, playlistContext, onPlaylistNext }) => {
   // Detect if this is a wrapped lesson with checkpoint data (new format), a raw Lesson object, or a topic-only launch.
   const isWrappedFormat = initialData && typeof initialData === 'object' && 'lesson' in initialData;
   const isLessonObject = initialData && typeof initialData === 'object' && 'sections' in initialData && 'checkpoints' in initialData;
@@ -203,7 +208,8 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
       const context = validLesson.sections[currentSectionIndex]?.content || "The student is currently at a checkpoint gathering their thoughts.";
       const checkpointQuestions = validLesson.checkpoints.map(c => c.question);
       
-      const response = await askLessonClarification(validLesson.topic, question, context, checkpointQuestions);
+      const profile = getUserProfile();
+      const response = await askLessonClarification(validLesson.topic, question, context, checkpointQuestions, profile.socraticMode);
       setChatHistory(prev => [...prev, { role: 'ai', text: response }]);
     } catch (err) {
       setChatHistory(prev => [...prev, { role: 'ai', text: "I'm sorry, I couldn't process that query. Please try again." }]);
@@ -217,11 +223,13 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
     setIsEvaluating(true);
     try {
       const checkpoint = validLesson.checkpoints[currentCheckpointIndex];
+      const profile = getUserProfile();
       const feedback = await evaluateLessonAnswer(
         validLesson.topic,
         checkpoint.question,
         userAnswer,
-        checkpoint.correctAnswer
+        checkpoint.correctAnswer,
+        profile.socraticMode
       );
       setCheckpointFeedback(feedback);
     } catch (error) {
@@ -839,6 +847,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
             setIsFinished(false);
             if (topic) onChallenge?.(topic);
           }}
+          onPlaylistNext={onPlaylistNext}
         />
       )}
     </div>

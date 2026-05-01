@@ -18,6 +18,7 @@ export interface UserProfile {
   whiteboardOpens: number;
   helpOpenedCount: number;
   photoInputsUsed: number;
+  socraticMode: boolean;
 }
 
 const STORAGE_KEY = 'mathvision_user_profile';
@@ -37,7 +38,8 @@ export const getUserProfile = (): UserProfile => {
     hintsUsedTotal: 0,
     whiteboardOpens: 0,
     helpOpenedCount: 0,
-    photoInputsUsed: 0
+    photoInputsUsed: 0,
+    socraticMode: false
   };
 
   if (stored) {
@@ -134,5 +136,13 @@ export const incrementPhotoInputsUsed = () => {
   const profile = getUserProfile();
   profile.photoInputsUsed += 1;
   saveUserProfile(profile);
+  return profile;
+};
+
+export const toggleSocraticMode = () => {
+  const profile = getUserProfile();
+  profile.socraticMode = !profile.socraticMode;
+  saveUserProfile(profile);
+  window.dispatchEvent(new Event('profile_updated'));
   return profile;
 };

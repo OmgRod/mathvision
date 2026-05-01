@@ -8,19 +8,22 @@ import { PracticePanel } from './components/PracticePanel';
 import { LearnPanel } from './components/LearnPanel';
 import { HistoryPanel } from './components/HistoryPanel';
 import { ProfilePanel } from './components/ProfilePanel';
+import { ExamPlaylistView } from './components/ExamPlaylistView';
 import { Toast } from './components/Toast';
 import { HelpModal } from './components/HelpModal';
 import { ProcessingState, HistoryItem } from './types';
 import { solveMathEquation, inferBestLearningTopic } from './geminiService';
 import { saveToHistory } from './historyService';
-import { updateGenericStats, incrementHelpOpened, incrementPhotoInputsUsed } from './userService';
+import { updateGenericStats, incrementHelpOpened, incrementPhotoInputsUsed, getUserProfile } from './userService';
 import { checkAchievements } from './achievementService';
 import { Loader2, Trash2, RefreshCw, Camera, AlertCircle, Sparkles, BookOpen, PenTool, Brain, GraduationCap, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const App: React.FC = () => {
-  const [mode, setMode] = useState<'solver' | 'practice' | 'learn' | 'history' | 'profile'>('solver');
+  const [mode, setMode] = useState<'solver' | 'practice' | 'learn' | 'history' | 'profile' | 'exam-playlist'>('solver');
   const [image, setImage] = useState<string | null>(null);
+  const [examPath, setExamPath] = useState<any>(null);
+  const [playlistContext, setPlaylistContext] = useState<{ pathId: string, topicNames: string[], currentIndex: number } | null>(null);
 
   // Force dark mode
   useEffect(() => {
@@ -40,13 +43,17 @@ const App: React.FC = () => {
       setMode('practice');
     };
     
+    const handleSelectExamPathEvent = (e: any) => handleSelectExamPath(e.detail);
+    
     window.addEventListener('navigate_profile', handleXPNavigate);
     window.addEventListener('learn_topic', handleLearnTopic);
     window.addEventListener('practice_topic', handlePracticeTopic);
+    window.addEventListener('select_exam_path', handleSelectExamPathEvent);
     return () => {
       window.removeEventListener('navigate_profile', handleXPNavigate);
       window.removeEventListener('learn_topic', handleLearnTopic);
       window.removeEventListener('practice_topic', handlePracticeTopic);
+      window.removeEventListener('select_exam_path', handleSelectExamPathEvent);
     };
   }, []);
   const [textInput, setTextInput] = useState('');
@@ -132,11 +139,12 @@ const App: React.FC = () => {
 
     setState(prev => ({ ...prev, isProcessing: true, error: null }));
     try {
+      const profile = getUserProfile();
       const result = await solveMathEquation({ 
         image: image || undefined, 
         text: textInput || undefined, 
         mimeType: mimeType || undefined 
-      });
+      }, profile.socraticMode);
       setState({ isProcessing: false, error: null, result });
       setRecommendedLearnTopic(inferBestLearningTopic(textInput || '', result));
       
@@ -155,6 +163,34 @@ const App: React.FC = () => {
       }, 100);
     } catch (err: any) {
       setState({ isProcessing: false, error: err.message, result: null });
+    }
+  };
+  const handleSelectExamPath = (path: any) => {
+    setExamPath(path);
+    setMode('exam-playlist');
+  };
+
+  const handlePlaylistNext = () => {
+    if (!playlistContext) return;
+    const nextIndex = playlistContext.currentIndex + 1;
+    if (nextIndex < playlistContext.topicNames.length) {
+      const nextTopic = playlistContext.topicNames[nextIndex];
+      const newContext = { ...playlistContext, currentIndex: nextIndex };
+      setPlaylistContext(newContext);
+      
+      // We need to know if we were in Learn or Practice.
+      // For now, let's assume we continue the same type or go to playlist view.
+      // But usually "Next" means next topic in playlist.
+      // Let's just go back to playlist view for now to let them choose,
+      // OR better: if they were in a mode, keep them in that mode for the next topic.
+      if (mode === 'learn') {
+        setPreLoadedLesson({ topic: nextTopic });
+      } else {
+        setPreLoadedPractice({ topic: nextTopic });
+      }
+    } else {
+      setMode('exam-playlist');
+      setPlaylistContext(null);
     }
   };
 
@@ -516,7 +552,11 @@ const App: React.FC = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
             >
-              <PracticePanel initialData={preLoadedPractice ?? undefined} />
+              <PracticePanel 
+                initialData={preLoadedPractice ?? undefined} 
+                playlistContext={playlistContext}
+                onPlaylistNext={handlePlaylistNext}
+              />
             </motion.div>
           )}
 
@@ -529,6 +569,8 @@ const App: React.FC = () => {
             >
               <LearnPanel
                 initialData={preLoadedLesson}
+                playlistContext={playlistContext}
+                onPlaylistNext={handlePlaylistNext}
                 onChallenge={(topic) => {
                   setPreLoadedPractice({ topic });
                   setPreLoadedLesson(null);
@@ -557,6 +599,38 @@ const App: React.FC = () => {
               exit={{ opacity: 0, y: -20 }}
             >
               <ProfilePanel />
+            </motion.div>
+          )}
+
+          {mode === 'exam-playlist' && examPath && (
+            <motion.div
+              key="exam-playlist"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+            >
+              <ExamPlaylistView 
+                path={examPath}
+                onBack={() => setMode('solver')}
+                onLearnTopic={(topic) => {
+                  setPlaylistContext({
+                    pathId: examPath.id,
+                    topicNames: examPath.topics,
+                    currentIndex: examPath.topics.indexOf(topic)
+                  });
+                  setPreLoadedLesson({ topic });
+                  setMode('learn');
+                }}
+                onPracticeTopic={(topic) => {
+                  setPlaylistContext({
+                    pathId: examPath.id,
+                    topicNames: examPath.topics,
+                    currentIndex: examPath.topics.indexOf(topic)
+                  });
+                  setPreLoadedPractice({ topic });
+                  setMode('practice');
+                }}
+              />
             </motion.div>
           )}
         </AnimatePresence>

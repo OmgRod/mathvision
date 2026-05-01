@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Trophy, 
@@ -24,9 +24,12 @@ import {
   X,
   Lock
 } from 'lucide-react';
-import { getUserProfile, UserProfile } from '../userService';
+import { getUserProfile, UserProfile, toggleSocraticMode } from '../userService';
 import { ACHIEVEMENTS } from '../achievementService';
 import { Modal } from './Modal';
+import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, CartesianGrid } from 'recharts';
+import { getTopicCategories, PRACTICE_TOPICS } from '../constants';
+import { getSrsData } from '../srsService';
 
 const ICON_MAP: Record<string, React.ReactNode> = {
   'Footprints': <Footprints size={18} />,
@@ -162,13 +165,53 @@ export const ProfilePanel: React.FC = () => {
   const [showResetModal, setShowResetModal] = useState(false);
   const [exportData, setExportData] = useState<string>('');
 
+  const analyticsData = useMemo(() => {
+    const categories: Record<string, { total: number, completed: number, score: number }> = {};
+    const srsData = getSrsData();
+
+    PRACTICE_TOPICS.forEach(topic => {
+      const cats = getTopicCategories(topic);
+      cats.forEach(cat => {
+        if (!categories[cat]) categories[cat] = { total: 0, completed: 0, score: 0 };
+        categories[cat].total++;
+        
+        let topicScore = 0;
+        if (profile.completedTopics.includes(topic.name)) topicScore += 50;
+        if (profile.masteredLessons.includes(topic.name)) topicScore += 50;
+
+        const srsItem = srsData.find(s => s.topic === topic.name);
+        if (srsItem) {
+           topicScore += Math.min(50, (srsItem.easeFactor - 1.3) * 20); 
+        }
+
+        if (topicScore > 0) categories[cat].completed++;
+        categories[cat].score += topicScore;
+      });
+    });
+
+    const radarData = Object.entries(categories).map(([subject, data]) => {
+       const rawProficiency = data.total > 0 ? Math.min(100, Math.round((data.score / (data.total * 100)) * 100)) : 0;
+       return {
+         subject,
+         A: rawProficiency,
+         fullMark: 100,
+       };
+    }).sort((a, b) => b.A - a.A);
+
+    const barData = radarData.filter(d => d.A > 0).map(d => ({ name: d.subject, proficiency: d.A })).sort((a, b) => b.proficiency - a.proficiency);
+    
+    return { radarData: radarData.slice(0, 6), barData }; 
+  }, [profile]);
+
   useEffect(() => {
     const refresh = () => setProfile(getUserProfile());
     window.addEventListener('xp_updated', refresh);
     window.addEventListener('achievement_unlocked', refresh);
+    window.addEventListener('profile_updated', refresh);
     return () => {
       window.removeEventListener('xp_updated', refresh);
       window.removeEventListener('achievement_unlocked', refresh);
+      window.removeEventListener('profile_updated', refresh);
     };
   }, []);
 
@@ -381,6 +424,35 @@ export const ProfilePanel: React.FC = () => {
               </button>
            </div>
 
+           <div className="p-8 bg-white dark:bg-slate-800 rounded-[3rem] border border-slate-100 dark:border-slate-700 space-y-6 shadow-xl dark:shadow-none">
+              <div className="flex items-center gap-3">
+                <div className={`p-3 rounded-2xl ${profile.socraticMode ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'}`}>
+                  <GraduationCap size={20} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Socratic Tutor</h3>
+                  <p className="text-[10px] text-slate-500 font-bold">Never gives away answers</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl">
+                <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase">Strict Mode</span>
+                <button 
+                  onClick={toggleSocraticMode}
+                  className={`w-12 h-6 rounded-full transition-all relative ${profile.socraticMode ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-700'}`}
+                >
+                  <motion.div 
+                    animate={{ x: profile.socraticMode ? 24 : 4 }}
+                    className="absolute top-1 left-0 w-4 h-4 bg-white rounded-full shadow-sm"
+                  />
+                </button>
+              </div>
+              
+              <p className="text-[10px] text-slate-400 font-medium leading-relaxed italic">
+                When enabled, the AI will use the Socratic method—asking leading questions and identifying logic errors instead of providing solutions.
+              </p>
+           </div>
+
            <div className="p-8 bg-indigo-600 dark:bg-indigo-700 rounded-[3rem] text-white space-y-6 shadow-2xl dark:shadow-none relative overflow-hidden">
               <div className="absolute top-0 right-0 p-8 opacity-10">
                 <Zap size={100} />
@@ -396,6 +468,50 @@ export const ProfilePanel: React.FC = () => {
            </div>
         </div>
       </div>
+
+      {/* Analytics Section */}
+      {analyticsData.radarData.length > 0 && (
+        <div className="space-y-6 pt-8">
+           <div className="flex items-center gap-3 mb-2">
+             <Target className="text-indigo-600 dark:text-indigo-400" size={28} />
+             <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-widest">Strengths & Weaknesses</h3>
+           </div>
+           
+           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+             <div className="bg-white dark:bg-slate-800 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-700 shadow-xl dark:shadow-none transition-colors">
+               <h4 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-6">Skill Radar</h4>
+               <div className="h-[300px] w-full">
+                 <ResponsiveContainer width="100%" height="100%">
+                   <RadarChart cx="50%" cy="50%" outerRadius="80%" data={analyticsData.radarData}>
+                     <PolarGrid stroke="#e2e8f0" className="dark:stroke-slate-700" />
+                     <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 11, fontWeight: 'bold' }} />
+                     <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                     <Radar name="Proficiency" dataKey="A" stroke="#4f46e5" fill="#4f46e5" fillOpacity={0.5} />
+                   </RadarChart>
+                 </ResponsiveContainer>
+               </div>
+             </div>
+             
+             <div className="bg-white dark:bg-slate-800 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-700 shadow-xl dark:shadow-none transition-colors flex flex-col">
+               <h4 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-6">Domain Mastery (%)</h4>
+               <div className="flex-grow w-full min-h-[300px]">
+                 <ResponsiveContainer width="100%" height="100%">
+                   <BarChart data={analyticsData.barData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                     <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" className="dark:stroke-slate-700" />
+                     <XAxis type="number" domain={[0, 100]} hide />
+                     <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 'bold' }} width={120} />
+                     <RechartsTooltip 
+                       cursor={{fill: 'rgba(99, 102, 241, 0.1)'}} 
+                       contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', backgroundColor: '#1e293b', color: '#fff' }} 
+                     />
+                     <Bar dataKey="proficiency" fill="#10b981" radius={[0, 8, 8, 0]} barSize={24} />
+                   </BarChart>
+                 </ResponsiveContainer>
+               </div>
+             </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 };

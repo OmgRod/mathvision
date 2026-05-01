@@ -38,7 +38,7 @@ async function tryModels(contents: any, config: any): Promise<any> {
   throw new Error("All models failed. Please try again later.");
 }
 
-export const solveMathEquation = async (input: { image?: string; text?: string; mimeType?: string }): Promise<MathResult> => {
+export const solveMathEquation = async (input: { image?: string; text?: string; mimeType?: string }, socraticMode: boolean = false): Promise<MathResult> => {
   const prompt = `
     Analyze the mathematical problem provided below.
     ${input.text ? `Problem description: ${input.text}` : 'Analyze the attached image.'}
@@ -51,8 +51,17 @@ export const solveMathEquation = async (input: { image?: string; text?: string; 
     2. finalAnswer: The result in clean LaTeX.
     3. explanation: A detailed Markdown explanation (Essay mode).
     4. steps: A list of simplified steps for a carousel (Easy mode).
-
+    
+    ${socraticMode ? `
+    STRICT SOCRATIC MODE ENABLED:
+    - YOUR GOAL IS TO NEVER GIVE AWAY THE FINAL ANSWER.
+    - In 'finalAnswer', write "Socratic Mode: Discover the answer below."
+    - In 'explanation', identify the mathematical concept and ask the user 2-3 leading questions that would help them start solving it. Identify potential pitfalls they should watch out for.
+    - In 'steps', instead of providing the solution steps, provide 1-3 "Discovery Steps". Each step title should be a guiding question (e.g., "Step 1: What is the first operation?"). The 'math' field should be a hint or a starting formula without the specific values plugged in yet.
+    - Be a supportive mentor, not a calculator.
+    ` : `
     BONUS: ONLY if a visual diagram (geometry shape, coordinate graph, number line) is STRICTLY NECESSARY to understand a specific step, generate a clean, minimal SVG string for it under 'diagramSvg' within that step. Do NOT generate diagrams unless they provide critical clarity that text cannot. CRITICAL: Diagrams must NOT spoil the final answer or include solution values; they should only represent the problem logic visually.
+    `}
   `;
 
   try {
@@ -182,7 +191,7 @@ export const inferBestLearningTopic = (text: string, result?: MathResult): strin
   return findBestMatchingTopic(candidateText);
 };
 
-export const evaluateStep = async (question: string, expectedMath: string, userMath: string, finalAnswer?: string): Promise<QuizFeedback> => {
+export const evaluateStep = async (question: string, expectedMath: string, userMath: string, finalAnswer?: string, socraticMode: boolean = false): Promise<QuizFeedback> => {
   const prompt = `
     The math question is: "${question}"
     ${finalAnswer ? `The FINAL intended answer to the entire question is: "${finalAnswer}"` : ''}
@@ -196,7 +205,17 @@ export const evaluateStep = async (question: string, expectedMath: string, userM
     
     TONE: Ensure the message matches the linguistic complexity of the topic. Encourage younger students with simpler praise; use technical confirmation for advanced topics.
     
+    ${socraticMode ? `
+    STRICT SOCRATIC MODE ENABLED:
+    - NEVER provide the final answer, even if the user is close.
+    - NEVER provide the expected next step.
+    - If the user is WRONG: Identify exactly where they tripped up (e.g., "It looks like you subtracted instead of adding in that second term").
+    - Ask a leading question that guides them to fix their own mistake.
+    - If the user is CORRECT but not finished: Acknowledge their progress and ask "What do you think is the next logical step to get closer to [Goal]?"
+    - Use a guiding, encouraging, but firm "tutor" persona.
+    ` : `
     IMPORTANT: Under no circumstances should you provide the exact final answer, the expected next step expression, or the complete solution. If the user is wrong, give guidance or a conceptual hint instead of the answer.
+    `}
     
     Provide your evaluation in JSON:
     - isCorrect (boolean): true if it matches the next step OR if it's the final answer.
@@ -303,7 +322,7 @@ export const generateLesson = async (topic: string, level: number = 1): Promise<
   }
 };
 
-export const evaluateLessonAnswer = async (topic: string, question: string, userAnswer: string, correctAnswer: string): Promise<QuizFeedback> => {
+export const evaluateLessonAnswer = async (topic: string, question: string, userAnswer: string, correctAnswer: string, socraticMode: boolean = false): Promise<QuizFeedback> => {
   const prompt = `
     A student is taking a lesson on "${topic}".
     Question: "${question}"
@@ -312,7 +331,16 @@ export const evaluateLessonAnswer = async (topic: string, question: string, user
     
     Evaluate if the student's answer is conceptually correct, even if not phrased exactly like the reference.
     Provide constructive feedback. Use LaTeX for math ($$formula$$).
+    
+    ${socraticMode ? `
+    STRICT SOCRATIC MODE ENABLED:
+    - NEVER provide the correct answer or solution.
+    - If the user is WRONG: Do not just say "Incorrect". Analyze their answer and ask a question that helps them spot their own conceptual gap.
+    - Use leading questions (e.g., "If we apply the rule of [X], what happens to [Y]?").
+    - Be a supportive but strict mentor who wants the student to discover the answer.
+    ` : `
     IMPORTANT: Do not reveal the exact correct answer or solution. If the answer is wrong, offer a hint or explanation that helps the student understand the concept without giving it away.
+    `}
   `;
 
   try {
@@ -359,7 +387,7 @@ export const generateTopicOutline = async (topic: string, level: number): Promis
   }
 };
 
-export const askLessonClarification = async (topic: string, question: string, context: string, checkpointQuestions?: string[]): Promise<string> => {
+export const askLessonClarification = async (topic: string, question: string, context: string, checkpointQuestions?: string[], socraticMode: boolean = false): Promise<string> => {
   const prompt = `
     A student is learning about "${topic}". 
     They just read the following lesson content:
@@ -376,8 +404,16 @@ export const askLessonClarification = async (topic: string, question: string, co
     
     They have a question or need clarification: "${question}".
     
+    ${socraticMode ? `
+    STRICT SOCRATIC MODE ENABLED:
+    - As a Socratic Tutor, your goal is to NEVER give direct answers to conceptual questions if you can guide the student to the answer instead.
+    - Respond to their question with another question that makes them think or look at the lesson content again.
+    - Example: Instead of "The area of a circle is pi r squared", say "If you look at the formula for area, which variable represents the distance from the center to the edge?"
+    - Keep them on the path of discovery.
+    ` : `
     As a helpful tutor, explain it simply (unless refusing due to the anti-cheat rule). Use Markdown and LaTeX for math ($$formula$$). 
     Be encouraging and clear. Keep the answer concise (under 150 words).
+    `}
   `;
 
   try {
