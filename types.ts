@@ -23,6 +23,7 @@ export interface QuizQuestion {
   correctSteps: Step[];
   finalAnswer: string;
   diagramSvg?: string;
+  calculatorAllowed?: boolean;
 }
 
 export interface QuizFeedback {
@@ -42,6 +43,7 @@ export interface LessonQuestion {
   question: string;
   correctAnswer: string;
   explanation: string;
+  calculatorAllowed?: boolean;
 }
 
 export interface Lesson {

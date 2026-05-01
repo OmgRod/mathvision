@@ -133,6 +133,8 @@ export const generateQuizQuestion = async (topic: string): Promise<QuizQuestion>
     DIAGRAMS: For ANY question involving geometry, trigonometry, coordinates, or spatial relationships, you MUST provide a 'diagramSvg'. 
     
     CRITICAL DIAGRAM SAFETY: The 'diagramSvg' must ONLY represent the initial problem state. You are STRICTLY FORBIDDEN from including the final answer, solution values, or the 'target' value (N) in the diagram if it would spoil the question. For example, on a number line, you may mark the reference points, but do NOT mark the exact answer point.
+    
+    CALCULATOR ALLOWED: Determine if a calculator is typically allowed or necessary for this problem (e.g., complex decimals, advanced graphing, trigonometry without special angles). Set 'calculatorAllowed' to true if so, otherwise false.
   `;
 
   try {
@@ -142,6 +144,7 @@ export const generateQuizQuestion = async (topic: string): Promise<QuizQuestion>
         type: Type.OBJECT,
         properties: {
           question: { type: Type.STRING },
+          calculatorAllowed: { type: Type.BOOLEAN },
           diagramSvg: { type: Type.STRING },
           finalAnswer: { type: Type.STRING },
           correctSteps: {
@@ -156,7 +159,7 @@ export const generateQuizQuestion = async (topic: string): Promise<QuizQuestion>
             }
           }
         },
-        required: ["question", "finalAnswer", "correctSteps"]
+        required: ["question", "finalAnswer", "correctSteps", "calculatorAllowed"]
       }
     });
 
@@ -244,7 +247,7 @@ export const generateLesson = async (topic: string, level: number = 1): Promise<
     
     Provide a 'description' (short engaging summary) and 'outline' (list of key takeaways).
 
-    In Checkpoints, use standard exam-style phrasing.
+    In Checkpoints, use standard exam-style phrasing. For each checkpoint, determine if a calculator is typically allowed or necessary (e.g. complex decimals, advanced graphing, trigonometry). Set 'calculatorAllowed' to true if so, otherwise false.
   `;
 
   try {
@@ -274,9 +277,10 @@ export const generateLesson = async (topic: string, level: number = 1): Promise<
               properties: {
                 question: { type: Type.STRING },
                 correctAnswer: { type: Type.STRING },
-                explanation: { type: Type.STRING }
+                explanation: { type: Type.STRING },
+                calculatorAllowed: { type: Type.BOOLEAN }
               },
-              required: ["question", "correctAnswer", "explanation"]
+              required: ["question", "correctAnswer", "explanation", "calculatorAllowed"]
             }
           }
         },

@@ -5,11 +5,12 @@ import { generateLesson, askLessonClarification, evaluateLessonAnswer, generateT
 import { 
   ArrowLeft, GraduationCap, ChevronRight, ChevronLeft, 
   MessageCircle, Send, Loader2, BookOpen, CheckCircle2, AlertCircle, 
-  Lightbulb, RefreshCcw, Volume2, Sparkles, PenTool, Pencil
+  Lightbulb, RefreshCcw, Volume2, Sparkles, PenTool, Pencil, Calculator
 } from 'lucide-react';
 import { TTSButton } from './TTSButton';
 import { TopicLibrary } from './TopicLibrary';
 import { Whiteboard } from './Whiteboard';
+import { CalculatorModal } from './CalculatorModal';
 import { CelebrationOverlay } from './CelebrationOverlay';
 import { addXP, updateGenericStats, addMastery, incrementWhiteboardOpens } from '../userService';
 import { checkAchievements } from '../achievementService';
@@ -56,6 +57,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
   const [checkpointFeedback, setCheckpointFeedback] = useState<QuizFeedback | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(false);
 
   const [isFinished, setIsFinished] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'detail' | 'learning'>(
@@ -581,11 +583,21 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
                    
                    <div className="relative z-10 space-y-6 md:space-y-8">
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 flex-wrap">
                           <CheckCircle2 size={32} className="text-indigo-200 dark:text-indigo-400" />
                           <h3 className="text-xl md:text-2xl font-black uppercase tracking-tight">Checkpoint {currentCheckpointIndex + 1}</h3>
+                          {validLesson.checkpoints[currentCheckpointIndex].calculatorAllowed !== undefined && (
+                            <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full flex items-center gap-1 border ${
+                              validLesson.checkpoints[currentCheckpointIndex].calculatorAllowed
+                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                            }`}>
+                              <Calculator size={12} />
+                              {validLesson.checkpoints[currentCheckpointIndex].calculatorAllowed ? 'Allowed' : 'No Calc'}
+                            </span>
+                          )}
                         </div>
-                        <TTSButton text={validLesson.checkpoints[currentCheckpointIndex].question} className="bg-white/10 text-white hover:bg-white/20 self-end md:self-auto" />
+                        <TTSButton text={validLesson.checkpoints[currentCheckpointIndex].question} className="bg-white/10 text-white hover:bg-white/20 self-end md:self-auto shrink-0" />
                       </div>
 
                       <div className="p-6 md:p-8 bg-white/10 dark:bg-indigo-900/20 backdrop-blur-md rounded-[2rem] border border-white/20 dark:border-indigo-500/30">
@@ -664,7 +676,7 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
                         </motion.div>
                       )}
 
-                      <div className="flex justify-between items-center mt-4">
+                      <div className="flex justify-between items-center mt-4 flex-wrap gap-4">
                         <button 
                           onClick={prevCheckpoint}
                           className="flex items-center gap-2 text-indigo-200 dark:text-indigo-400 hover:text-white dark:hover:text-white transition-colors text-sm font-bold"
@@ -672,6 +684,17 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
                           <ChevronLeft size={16} />
                           Back
                         </button>
+
+                        {validLesson.checkpoints[currentCheckpointIndex].calculatorAllowed && (
+                           <button 
+                             onClick={() => setShowCalculator(true)}
+                             className="flex items-center gap-2 text-emerald-300 hover:text-emerald-200 transition-colors text-sm font-bold"
+                           >
+                             <Calculator size={16} />
+                             Open Calculator
+                           </button>
+                        )}
+
                         <button 
                           onClick={() => setShowCheckpoint(false)}
                           className="flex items-center gap-2 text-indigo-200 dark:text-indigo-400 hover:text-white dark:hover:text-white transition-colors text-sm font-bold"
@@ -780,6 +803,10 @@ export const LearnPanel: React.FC<{ initialData?: Lesson | { lesson: Lesson; las
 
       {showWhiteboard && (
         <Whiteboard onClose={() => setShowWhiteboard(false)} />
+      )}
+
+      {showCalculator && (
+        <CalculatorModal onClose={() => setShowCalculator(false)} />
       )}
 
       {validLesson && (

@@ -16,10 +16,12 @@ import {
   Volume2,
   PenTool,
   History,
-  Pencil
+  Pencil,
+  Calculator
 } from 'lucide-react';
 import { TTSButton } from './TTSButton';
 import { Whiteboard } from './Whiteboard';
+import { CalculatorModal } from './CalculatorModal';
 import { CelebrationOverlay } from './CelebrationOverlay';
 import { addXP, updateGenericStats, addCompletedTopic, incrementHintsUsed, incrementWhiteboardOpens } from '../userService';
 import { checkAchievements } from '../achievementService';
@@ -57,6 +59,7 @@ export const PracticePanel: React.FC<{ initialData?: { topic: string, data?: Qui
   const [hintsUsed, setHintsUsed] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<{ step: any, answer: string }[]>([]);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(false);
   
   useEffect(() => {
     if (initialData?.topic && !initialData.data && !question) {
@@ -265,9 +268,21 @@ export const PracticePanel: React.FC<{ initialData?: { topic: string, data?: Qui
             className="bg-white dark:bg-slate-800 p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-2xl shadow-indigo-50 dark:shadow-none transition-colors"
           >
             <div className="flex justify-between items-start mb-6">
-              <span className="px-3 md:px-4 py-1.5 bg-indigo-50 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 text-[10px] md:text-xs font-bold rounded-full uppercase tracking-wider">
-                {topic}
-              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-3 md:px-4 py-1.5 bg-indigo-50 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 text-[10px] md:text-xs font-bold rounded-full uppercase tracking-wider">
+                  {topic}
+                </span>
+                {question.calculatorAllowed !== undefined && (
+                  <span className={`px-3 md:px-4 py-1.5 text-[10px] md:text-xs font-bold rounded-full uppercase tracking-wider flex items-center gap-1 ${
+                    question.calculatorAllowed 
+                      ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' 
+                      : 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'
+                  }`}>
+                    <Calculator size={12} />
+                    {question.calculatorAllowed ? 'Calculator Allowed' : 'No Calculator'}
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500 font-mono text-[10px] md:text-xs">
                 <span>Score: {score}</span>
               </div>
@@ -424,15 +439,27 @@ export const PracticePanel: React.FC<{ initialData?: { topic: string, data?: Qui
                 )}
               </AnimatePresence>
 
-              {!feedback && (
-                <button
-                  onClick={useHint}
-                  className="flex items-center gap-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 text-sm font-bold transition-colors"
-                >
-                  <Lightbulb size={16} />
-                  Stuck? Get a Hint
-                </button>
-              )}
+              <div className="flex items-center gap-6">
+                {!feedback && (
+                  <button
+                    onClick={useHint}
+                    className="flex items-center gap-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 text-sm font-bold transition-colors"
+                  >
+                    <Lightbulb size={16} />
+                    Stuck? Get a Hint
+                  </button>
+                )}
+                
+                {question.calculatorAllowed && (
+                  <button
+                    onClick={() => setShowCalculator(true)}
+                    className="flex items-center gap-2 text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 text-sm font-bold transition-colors"
+                  >
+                    <Calculator size={16} />
+                    Open Calculator
+                  </button>
+                )}
+              </div>
             </div>
           </motion.div>
         </div>
@@ -440,6 +467,10 @@ export const PracticePanel: React.FC<{ initialData?: { topic: string, data?: Qui
 
       {showWhiteboard && (
         <Whiteboard onClose={() => setShowWhiteboard(false)} />
+      )}
+
+      {showCalculator && (
+        <CalculatorModal onClose={() => setShowCalculator(false)} />
       )}
 
       <button
