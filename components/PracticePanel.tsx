@@ -67,10 +67,12 @@ export const PracticePanel: React.FC<{
   const [showCalculator, setShowCalculator] = useState(false);
   
   useEffect(() => {
-    if (initialData?.topic && !initialData.data && !question) {
+    if (initialData?.topic && initialData.topic !== topic) {
+      startPractice(initialData.topic);
+    } else if (initialData?.topic && !initialData.data && !question && !loading) {
       startPractice(initialData.topic);
     }
-  }, [initialData?.topic]);
+  }, [initialData?.topic, initialData?.data]);
   
   const startPractice = async (selectedTopic: string) => {
     setTopic(selectedTopic);
@@ -372,29 +374,74 @@ export const PracticePanel: React.FC<{
               )}
 
               <div className="space-y-4">
-                <label className="block text-sm font-bold text-slate-500 dark:text-slate-400">What's the next step? Type the mathematical expression:</label>
-                <div className="relative">
-                  <div className="relative">
-                    <MathInput
-                      value={userAnswer}
-                      onChange={setUserAnswer}
-                      disabled={feedback?.isCorrect || loading}
-                      placeholder="e.g. 2x = 10"
-                      className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-700 rounded-2xl focus-within:border-indigo-500 transition-all font-bold"
-                      onEnter={handleNextStep}
-                      paddingRight="60px"
-                    />
-                    <div className="absolute right-1.5 top-1.5 bottom-1.5 flex gap-1 z-10">
+                <label className="block text-sm font-bold text-slate-500 dark:text-slate-400">
+                  {question.isMcq ? 'Choose the correct option:' : "What's the next step? Type the mathematical expression:"}
+                </label>
+                
+                {question.isMcq && question.options ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {question.options.map((option, idx) => (
                       <button
-                        onClick={handleNextStep}
-                        disabled={loading || !userAnswer || feedback?.isCorrect}
-                        className="p-3 bg-indigo-600 dark:bg-indigo-500 text-white rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-400 disabled:opacity-50 transition-all"
+                        key={idx}
+                        onClick={() => {
+                          setUserAnswer(option);
+                          // Auto-submit MCQ for better UX
+                          if (!feedback?.isCorrect) {
+                            setTimeout(() => handleNextStep(), 10);
+                          }
+                        }}
+                        disabled={loading || feedback?.isCorrect}
+                        className={`p-6 rounded-2xl border-2 text-left transition-all relative overflow-hidden group ${
+                          userAnswer === option 
+                            ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20' 
+                            : 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 hover:border-slate-200 dark:hover:border-slate-700'
+                        }`}
                       >
-                        {loading ? <RefreshCcw size={20} className="animate-spin" /> : <Send size={20} />}
+                        <div className="flex items-center gap-4">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm shrink-0 ${
+                            userAnswer === option ? 'bg-indigo-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'
+                          }`}>
+                            {String.fromCharCode(65 + idx)}
+                          </div>
+                          <div className="text-lg font-bold text-slate-900 dark:text-white prose prose-invert">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkMath]}
+                              rehypePlugins={[rehypeKatex]}
+                              components={{
+                                p: ({ children }) => <>{children}</>,
+                              }}
+                            >
+                              {wrapMathIfNeeded(option)}
+                            </ReactMarkdown>
+                          </div>
+                        </div>
                       </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <div className="relative">
+                      <MathInput
+                        value={userAnswer}
+                        onChange={setUserAnswer}
+                        disabled={feedback?.isCorrect || loading}
+                        placeholder="e.g. 2x = 10"
+                        className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-700 rounded-2xl focus-within:border-indigo-500 transition-all font-bold"
+                        onEnter={handleNextStep}
+                        paddingRight="60px"
+                      />
+                      <div className="absolute right-1.5 top-1.5 bottom-1.5 flex gap-1 z-10">
+                        <button
+                          onClick={handleNextStep}
+                          disabled={loading || !userAnswer || feedback?.isCorrect}
+                          className="p-3 bg-indigo-600 dark:bg-indigo-500 text-white rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-400 disabled:opacity-50 transition-all"
+                        >
+                          {loading ? <RefreshCcw size={20} className="animate-spin" /> : <Send size={20} />}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
 
               <AnimatePresence>

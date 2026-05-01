@@ -24,6 +24,8 @@ export interface QuizQuestion {
   finalAnswer: string;
   diagramSvg?: string;
   calculatorAllowed?: boolean;
+  isMcq?: boolean;
+  options?: string[];
 }
 
 export interface QuizFeedback {
@@ -44,6 +46,8 @@ export interface LessonQuestion {
   correctAnswer: string;
   explanation: string;
   calculatorAllowed?: boolean;
+  isMcq?: boolean;
+  options?: string[];
 }
 
 export interface Lesson {

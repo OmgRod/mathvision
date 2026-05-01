@@ -108,8 +108,10 @@ export const LearnPanel: React.FC<{
   }, []);
 
   useEffect(() => {
-    if (initialTopic && !lesson && !isTopicOnly) {
-      startLesson(initialTopic, restoredLessonLevel ?? 1, true);
+    if (initialTopic && initialTopic !== topic) {
+      startLesson(initialTopic, lessonLevel, true);
+    } else if (initialTopic && !lesson && !isTopicOnly && !loading) {
+      startLesson(initialTopic, lessonLevel, true);
     }
   }, [initialTopic, isTopicOnly]);
 
@@ -621,28 +623,64 @@ export const LearnPanel: React.FC<{
 
                       {!checkpointFeedback ? (
                         <div className="space-y-4 relative">
-                          <div className="relative">
-                            <MathInput
-                              value={userAnswer}
-                              onChange={setUserAnswer}
-                              placeholder="Your answer..."
-                              className="w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-2 border-white/20 dark:border-slate-700 rounded-[1.5rem] md:rounded-[2rem] focus-within:border-white dark:focus-within:border-indigo-500 transition-all"
-                              onEnter={handleCheckpointSubmit}
-                              paddingRight="40px"
-                            />
-                          </div>
-                          <button
-                            onClick={handleCheckpointSubmit}
-                            disabled={!userAnswer.trim() || isEvaluating}
-                            className="w-full py-4 md:py-5 bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white font-black text-lg md:text-xl rounded-[1.5rem] md:rounded-[2rem] hover:bg-indigo-50 dark:hover:bg-indigo-700 transition-all shadow-xl dark:shadow-none flex items-center justify-center gap-3"
-                          >
-                            {isEvaluating ? (
-                              <>
-                                <Loader2 size={24} className="animate-spin" />
-                                Evaluating...
-                              </>
-                            ) : 'Submit Answer'}
-                          </button>
+                          {validLesson.checkpoints[currentCheckpointIndex].isMcq && validLesson.checkpoints[currentCheckpointIndex].options ? (
+                             <div className="grid grid-cols-1 gap-3">
+                               {validLesson.checkpoints[currentCheckpointIndex].options.map((option, idx) => (
+                                 <button
+                                   key={idx}
+                                   onClick={() => {
+                                     setUserAnswer(option);
+                                     // Small delay for visual feedback then auto-submit
+                                     setTimeout(() => {
+                                       handleCheckpointSubmit();
+                                     }, 150);
+                                   }}
+                                   disabled={isEvaluating}
+                                   className={`p-5 rounded-[1.5rem] text-left border-2 transition-all relative overflow-hidden group flex items-center gap-4 ${
+                                     userAnswer === option 
+                                       ? 'bg-white text-indigo-600 border-white shadow-lg' 
+                                       : 'bg-white/10 border-white/10 text-white hover:bg-white/20'
+                                   }`}
+                                 >
+                                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm shrink-0 ${
+                                     userAnswer === option ? 'bg-indigo-600 text-white' : 'bg-white/20 text-white'
+                                   }`}>
+                                     {String.fromCharCode(65 + idx)}
+                                   </div>
+                                   <div className="text-base font-bold prose prose-invert">
+                                      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]} components={{ p: ({children}) => <>{children}</> }}>
+                                        {option}
+                                      </ReactMarkdown>
+                                   </div>
+                                 </button>
+                               ))}
+                             </div>
+                          ) : (
+                            <>
+                              <div className="relative">
+                                <MathInput
+                                  value={userAnswer}
+                                  onChange={setUserAnswer}
+                                  placeholder="Your answer..."
+                                  className="w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-2 border-white/20 dark:border-slate-700 rounded-[1.5rem] md:rounded-[2rem] focus-within:border-white dark:focus-within:border-indigo-500 transition-all"
+                                  onEnter={handleCheckpointSubmit}
+                                  paddingRight="40px"
+                                />
+                              </div>
+                              <button
+                                onClick={handleCheckpointSubmit}
+                                disabled={!userAnswer.trim() || isEvaluating}
+                                className="w-full py-4 md:py-5 bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white font-black text-lg md:text-xl rounded-[1.5rem] md:rounded-[2rem] hover:bg-indigo-50 dark:hover:bg-indigo-700 transition-all shadow-xl dark:shadow-none flex items-center justify-center gap-3"
+                              >
+                                {isEvaluating ? (
+                                  <>
+                                    <Loader2 size={24} className="animate-spin" />
+                                    Evaluating...
+                                  </>
+                                ) : 'Submit Answer'}
+                              </button>
+                            </>
+                          )}
                         </div>
                       ) : (
                         <motion.div

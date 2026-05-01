@@ -139,11 +139,9 @@ export const generateQuizQuestion = async (topic: string): Promise<QuizQuestion>
     
     Use LaTeX for all expressions. Wrap ANY mathematical expression (numbers, variables, formulas) in double dollar signs (e.g. $$x = 5$$).
     
-    DIAGRAMS: For ANY question involving geometry, trigonometry, coordinates, or spatial relationships, you MUST provide a 'diagramSvg'. 
-    
-    CRITICAL DIAGRAM SAFETY: The 'diagramSvg' must ONLY represent the initial problem state. You are STRICTLY FORBIDDEN from including the final answer, solution values, or the 'target' value (N) in the diagram if it would spoil the question. For example, on a number line, you may mark the reference points, but do NOT mark the exact answer point.
-    
     CALCULATOR ALLOWED: Determine if a calculator is typically allowed or necessary for this problem (e.g., complex decimals, advanced graphing, trigonometry without special angles). Set 'calculatorAllowed' to true if so, otherwise false.
+    
+    MULTIPLE CHOICE (MCQ): You may optionally choose to make this a Multiple Choice Question. If you do, set 'isMcq' to true and provide exactly 4 'options'. One of the options must match the 'finalAnswer' (or the last step's math). If it's a standard step-by-step question, set 'isMcq' to false and omit 'options'.
   `;
 
   try {
@@ -156,6 +154,8 @@ export const generateQuizQuestion = async (topic: string): Promise<QuizQuestion>
           calculatorAllowed: { type: Type.BOOLEAN },
           diagramSvg: { type: Type.STRING },
           finalAnswer: { type: Type.STRING },
+          isMcq: { type: Type.BOOLEAN },
+          options: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Required only if isMcq is true. Provide exactly 4 options." },
           correctSteps: {
             type: Type.ARRAY,
             items: {
@@ -267,6 +267,8 @@ export const generateLesson = async (topic: string, level: number = 1): Promise<
     Provide a 'description' (short engaging summary) and 'outline' (list of key takeaways).
 
     In Checkpoints, use standard exam-style phrasing. For each checkpoint, determine if a calculator is typically allowed or necessary (e.g. complex decimals, advanced graphing, trigonometry). Set 'calculatorAllowed' to true if so, otherwise false.
+    
+    CHECKPOINT MCQ: You may optionally choose to make checkpoints Multiple Choice Questions. If you do, set 'isMcq' to true and provide 4 'options' where one is the 'correctAnswer'.
   `;
 
   try {
@@ -297,7 +299,9 @@ export const generateLesson = async (topic: string, level: number = 1): Promise<
                 question: { type: Type.STRING },
                 correctAnswer: { type: Type.STRING },
                 explanation: { type: Type.STRING },
-                calculatorAllowed: { type: Type.BOOLEAN }
+                calculatorAllowed: { type: Type.BOOLEAN },
+                isMcq: { type: Type.BOOLEAN },
+                options: { type: Type.ARRAY, items: { type: Type.STRING } }
               },
               required: ["question", "correctAnswer", "explanation", "calculatorAllowed"]
             }

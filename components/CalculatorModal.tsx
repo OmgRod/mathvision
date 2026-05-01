@@ -9,6 +9,10 @@ export const CalculatorModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
   const [mode, setMode] = useState<'scientific' | 'graphing'>('scientific');
   const [expression, setExpression] = useState('');
   const [result, setResult] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(10);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
   
   const [isShift, setIsShift] = useState(false);
   const [isHyp, setIsHyp] = useState(false);
@@ -36,12 +40,31 @@ export const CalculatorModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
       }
 
       const res = math.evaluate(expression, scope);
+      
+      if (typeof res === 'function') {
+        setResult('Incomplete');
+        return;
+      }
+
       if (typeof res === 'number') {
         setResult(Number(res).toPrecision(10).replace(/\.?0+$/, ''));
-      } else if (res && res.isComplex) {
-         setResult(`${res.re.toPrecision(5).replace(/\.?0+$/, '')} + ${res.im.toPrecision(5).replace(/\.?0+$/, '')}i`);
+      } else if (res && typeof res === 'object') {
+        if (res.isComplex) {
+          const re = res.re.toPrecision(5).replace(/\.?0+$/, '');
+          const im = res.im.toPrecision(5).replace(/\.?0+$/, '');
+          const sign = res.im >= 0 ? '+' : '-';
+          setResult(`${re} ${sign} ${Math.abs(res.im).toPrecision(5).replace(/\.?0+$/, '')}i`);
+        } else if (res.isUnit) {
+          setResult(res.toString());
+        } else if (res.isMatrix) {
+          setResult('Matrix');
+        } else if (res.entries && Array.isArray(res.entries)) {
+          setResult('Array');
+        } else {
+          setResult(res.toString());
+        }
       } else {
-        setResult(res.toString());
+        setResult(res?.toString() || '0');
       }
     } catch (e) {
       setResult('Error');
@@ -58,7 +81,7 @@ export const CalculatorModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
     if (mode === 'graphing' && canvasRef.current) {
       drawGraph();
     }
-  }, [expression, mode, angleMode]);
+  }, [expression, mode, angleMode, zoom, offset]);
 
   const drawGraph = () => {
     const canvas = canvasRef.current;
@@ -70,95 +93,187 @@ export const CalculatorModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
     const height = canvas.height;
     ctx.clearRect(0, 0, width, height);
 
-    const xMin = -10;
-    const xMax = 10;
-    const yMin = -10;
-    const yMax = 10;
-
+    const xMin = -zoom + offset.x;
+    const xMax = zoom + offset.x;
+    const yMin = -zoom + offset.y;
+    const yMax = zoom + offset.y;
+    
     const scaleX = width / (xMax - xMin);
     const scaleY = height / (yMax - yMin);
     
-    const originX = width / 2;
-    const originY = height / 2;
+    const originX = width / 2 - (offset.x * scaleX);
+    const originY = height / 2 + (offset.y * scaleY);
 
-    ctx.strokeStyle = '#334155';
+    // Grid lines
+    ctx.strokeStyle = '#1e293b';
     ctx.lineWidth = 1;
-    for (let x = xMin; x <= xMax; x++) {
+    const step = zoom > 50 ? 10 : (zoom > 20 ? 5 : 1);
+    
+    ctx.font = '10px Inter, sans-serif';
+    ctx.fillStyle = '#64748b';
+    ctx.textAlign = 'center';
+
+    for (let x = Math.ceil(xMin / step) * step; x <= xMax; x += step) {
       const screenX = originX + x * scaleX;
       ctx.beginPath();
       ctx.moveTo(screenX, 0);
       ctx.lineTo(screenX, height);
       ctx.stroke();
+      
+      // Labels
+      if (Math.abs(x) > 0.001) {
+        ctx.fillText(x.toString(), screenX, originY + 15);
+      }
     }
-    for (let y = yMin; y <= yMax; y++) {
+    for (let y = Math.ceil(yMin / step) * step; y <= yMax; y += step) {
       const screenY = originY - y * scaleY;
       ctx.beginPath();
       ctx.moveTo(0, screenY);
       ctx.lineTo(width, screenY);
       ctx.stroke();
+      
+      // Labels
+      if (Math.abs(y) > 0.001) {
+        ctx.textAlign = 'right';
+        ctx.fillText(y.toString(), originX - 10, screenY + 4);
+        ctx.textAlign = 'center';
+      }
     }
     
-    ctx.strokeStyle = '#64748b';
+    // Axes
+    ctx.strokeStyle = '#475569';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(0, originY);
-    ctx.lineTo(width, originY);
+    ctx.moveTo(0, originY); ctx.lineTo(width, originY);
     ctx.stroke();
-
     ctx.beginPath();
-    ctx.moveTo(originX, 0);
-    ctx.lineTo(originX, height);
+    ctx.moveTo(originX, 0); ctx.lineTo(originX, height);
     ctx.stroke();
 
     if (!expression.trim()) return;
 
+    // Handle Equations (implicit or explicit)
+    let processedExpression = expression.replace(/\s+/g, '');
+    let isImplicit = processedExpression.includes('=');
+    let finalExpr = processedExpression;
+
+    if (isImplicit) {
+      const sides = processedExpression.split('=');
+      if (sides[0] === 'y') {
+        finalExpr = sides[1];
+        isImplicit = false;
+      } else if (sides[0] === 'x') {
+        // Vertical line x = c
+        const c = parseFloat(sides[1]);
+        if (!isNaN(c)) {
+          const sx = originX + c * scaleX;
+          ctx.strokeStyle = '#818cf8';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(sx, 0);
+          ctx.lineTo(sx, height);
+          ctx.stroke();
+          return;
+        }
+        finalExpr = `x - (${sides[1]})`;
+        isImplicit = true;
+      } else {
+        finalExpr = `(${sides[0]}) - (${sides[1]})`;
+        isImplicit = true;
+      }
+    }
+
     ctx.strokeStyle = '#818cf8';
     ctx.lineWidth = 3;
-    ctx.beginPath();
-    
-    let isFirst = true;
     
     let scope: any = {};
     if (angleMode === 'deg') {
       scope = {
-        sin: math.evaluate('f(x) = sin(x deg)'),
-        cos: math.evaluate('f(x) = cos(x deg)'),
-        tan: math.evaluate('f(x) = tan(x deg)'),
+        sin: (x: any) => math.sin(x * Math.PI / 180),
+        cos: (x: any) => math.cos(x * Math.PI / 180),
+        tan: (x: any) => math.tan(x * Math.PI / 180),
       };
     }
 
-    let compiled: any = null;
     try {
-      compiled = math.compile(expression);
-    } catch (e) {
-      return;
-    }
-
-    for (let px = 0; px <= width; px += 2) {
-      const mathX = xMin + (px / width) * (xMax - xMin);
-      try {
-        scope.x = mathX;
-        const mathY = compiled.evaluate(scope);
-        if (typeof mathY === 'number' && !isNaN(mathY) && isFinite(mathY)) {
-          const py = originY - mathY * scaleY;
-          if (py < -height || py > height * 2) {
-             isFirst = true;
-             continue;
-          }
-          if (isFirst) {
-            ctx.moveTo(px, py);
-            isFirst = false;
-          } else {
-            ctx.lineTo(px, py);
-          }
-        } else {
-          isFirst = true; 
+      const compiled = math.compile(finalExpr);
+      
+      if (!isImplicit) {
+        // Standard f(x) rendering
+        ctx.beginPath();
+        let isFirst = true;
+        for (let px = 0; px <= width; px += 2) {
+          const mathX = xMin + (px / width) * (xMax - xMin);
+          scope.x = mathX;
+          const mathY = compiled.evaluate(scope);
+          if (typeof mathY === 'number' && isFinite(mathY)) {
+            const py = originY - mathY * scaleY;
+            if (isFirst) { ctx.moveTo(px, py); isFirst = false; }
+            else { ctx.lineTo(px, py); }
+          } else { isFirst = true; }
         }
-      } catch (e) {
-        break; 
+        ctx.stroke();
+      } else {
+        // Implicit rendering using a grid of points
+        const gridSize = 150;
+        const dx = (xMax - xMin) / gridSize;
+        const dy = (yMax - yMin) / gridSize;
+        
+        ctx.fillStyle = '#818cf8';
+        for (let i = 0; i < gridSize; i++) {
+          for (let j = 0; j < gridSize; j++) {
+            const x = xMin + i * dx;
+            const y = yMin + j * dy;
+            
+            try {
+              // Check corners for sign change
+              const v1 = compiled.evaluate({ ...scope, x, y });
+              const v2 = compiled.evaluate({ ...scope, x: x + dx, y });
+              const v3 = compiled.evaluate({ ...scope, x, y: y + dy });
+              const v4 = compiled.evaluate({ ...scope, x: x + dx, y: y + dy });
+              
+              if ((v1 * v2 <= 0) || (v1 * v3 <= 0) || (v1 * v4 <= 0) || (v2 * v4 <= 0) || (v3 * v4 <= 0)) {
+                 const sx = originX + x * scaleX;
+                 const sy = originY - y * scaleY;
+                 ctx.fillRect(sx - 1.5, sy - 1.5, 3, 3);
+              }
+            } catch(e) {}
+          }
+        }
       }
+    } catch (e) {
+      console.error(e);
     }
-    ctx.stroke();
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (mode !== 'graphing') return;
+    setIsDragging(true);
+    setLastMousePos({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || mode !== 'graphing') return;
+    
+    const dx = e.clientX - lastMousePos.x;
+    const dy = e.clientY - lastMousePos.y;
+    
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const unitsPerPixelX = (zoom * 2) / canvas.width;
+      const unitsPerPixelY = (zoom * 2) / canvas.height;
+      
+      setOffset(prev => ({
+        x: prev.x - dx * unitsPerPixelX,
+        y: prev.y + dy * unitsPerPixelY
+      }));
+    }
+    
+    setLastMousePos({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
   };
 
   const handleButton = (val: string) => {
@@ -295,21 +410,44 @@ export const CalculatorModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
           ) : (
             <div className="flex flex-col h-full space-y-4">
               <div className="flex items-center gap-3">
-                <span className="text-xl font-black italic text-indigo-400">f(x) =</span>
                 <input 
                   type="text" 
                   value={expression} 
                   onChange={(e) => setExpression(e.target.value)}
                   className="flex-grow p-3 bg-slate-800 border-2 border-slate-700 rounded-xl focus:border-indigo-500 outline-none font-mono text-white"
-                  placeholder="e.g. sin(x) + x^2"
+                  placeholder="e.g. y = sin(x) or x^2 + y^2 = 25"
                 />
               </div>
               <div className="relative w-full aspect-square bg-slate-900 rounded-2xl border-2 border-slate-700 overflow-hidden">
+                <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
+                  <button 
+                    onClick={() => setZoom(prev => Math.max(1, prev - 2))}
+                    className="w-10 h-10 bg-slate-800/80 backdrop-blur-sm text-white rounded-lg flex items-center justify-center hover:bg-indigo-500 transition-colors border border-slate-700 shadow-lg font-bold"
+                  >
+                    +
+                  </button>
+                  <button 
+                    onClick={() => setZoom(prev => Math.min(100, prev + 2))}
+                    className="w-10 h-10 bg-slate-800/80 backdrop-blur-sm text-white rounded-lg flex items-center justify-center hover:bg-indigo-500 transition-colors border border-slate-700 shadow-lg font-bold"
+                  >
+                    -
+                  </button>
+                  <button 
+                    onClick={() => { setZoom(10); setOffset({ x: 0, y: 0 }); }}
+                    className="w-10 h-10 bg-slate-800/80 backdrop-blur-sm text-white rounded-lg flex items-center justify-center hover:bg-indigo-500 transition-colors border border-slate-700 shadow-lg text-[10px] font-bold"
+                  >
+                    RESET
+                  </button>
+                </div>
                 <canvas 
                   ref={canvasRef}
                   width={800}
                   height={800}
-                  className="w-full h-full object-cover"
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                  className={`w-full h-full object-cover ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
                 />
               </div>
             </div>

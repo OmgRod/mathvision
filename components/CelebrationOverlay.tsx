@@ -19,6 +19,7 @@ export const CelebrationOverlay: React.FC<CelebrationOverlayProps> = ({
   onHome, 
   onNext,
   onChallenge,
+  onPlaylistNext,
 }) => {
   useEffect(() => {
     const duration = 3 * 1000;
