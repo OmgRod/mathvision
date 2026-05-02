@@ -288,8 +288,16 @@ export const PracticePanel: React.FC<{
           >
             <div className="flex justify-between items-start mb-6">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="px-3 md:px-4 py-1.5 bg-indigo-50 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 text-[10px] md:text-xs font-bold rounded-full uppercase tracking-wider">
-                  {topic}
+                <span className="px-3 md:px-4 py-1.5 bg-indigo-50 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 text-[10px] md:text-xs font-bold rounded-full uppercase tracking-wider prose prose-xs prose-indigo dark:prose-invert">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkMath]}
+                    rehypePlugins={[rehypeKatex]}
+                    components={{
+                      p: ({ children }) => <>{children}</>,
+                    }}
+                  >
+                    {topic || ''}
+                  </ReactMarkdown>
                 </span>
                 {question.calculatorAllowed !== undefined && (
                   <span className={`px-3 md:px-4 py-1.5 text-[10px] md:text-xs font-bold rounded-full uppercase tracking-wider flex items-center gap-1 ${
@@ -345,7 +353,17 @@ export const PracticePanel: React.FC<{
                         animate={{ opacity: 1, x: 0 }}
                         className="bg-slate-50 dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-1"
                       >
-                        <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Step {idx + 1}: {cs.step.title}</div>
+                        <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase prose prose-xs dark:prose-invert max-w-none">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkMath]}
+                            rehypePlugins={[rehypeKatex]}
+                            components={{
+                              p: ({ children }) => <>{children}</>,
+                            }}
+                          >
+                            {`Step ${idx + 1}: ${cs.step.title}`}
+                          </ReactMarkdown>
+                        </div>
                         <div className="bg-slate-800 inline-block px-3 py-1 rounded-lg border border-slate-700 shadow-sm prose prose-invert prose-p:m-0 prose-code:text-indigo-400 prose-code:bg-transparent">
                           <ReactMarkdown
                             remarkPlugins={[remarkMath]}
@@ -375,48 +393,59 @@ export const PracticePanel: React.FC<{
 
               <div className="space-y-4">
                 <label className="block text-sm font-bold text-slate-500 dark:text-slate-400">
-                  {question.isMcq ? 'Choose the correct option:' : "What's the next step? Type the mathematical expression:"}
+                  {question.type !== 'FREE_RESPONSE' ? 'Choose the correct option:' : "What's the next step? Type the mathematical expression:"}
                 </label>
                 
-                {question.isMcq && question.options ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {question.options.map((option, idx) => (
+                {question.type !== 'FREE_RESPONSE' && question.options ? (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {question.options.map((option, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            if (!feedback?.isCorrect && !loading) {
+                              setUserAnswer(option);
+                            }
+                          }}
+                          disabled={loading || feedback?.isCorrect}
+                          className={`p-6 rounded-2xl border-2 text-left transition-all relative overflow-hidden group ${
+                            userAnswer === option 
+                              ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20' 
+                              : 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 hover:border-slate-200 dark:hover:border-slate-700'
+                          }`}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm shrink-0 ${
+                              userAnswer === option ? 'bg-indigo-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'
+                            }`}>
+                              {String.fromCharCode(65 + idx)}
+                            </div>
+                            <div className="text-lg font-bold text-slate-900 dark:text-white prose prose-invert">
+                              <ReactMarkdown
+                                remarkPlugins={[remarkMath]}
+                                rehypePlugins={[rehypeKatex]}
+                                components={{
+                                  p: ({ children }) => <>{children}</>,
+                                }}
+                              >
+                                {wrapMathIfNeeded(option)}
+                              </ReactMarkdown>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                    
+                    {!feedback?.isCorrect && (
                       <button
-                        key={idx}
-                        onClick={() => {
-                          setUserAnswer(option);
-                          // Auto-submit MCQ for better UX
-                          if (!feedback?.isCorrect) {
-                            setTimeout(() => handleNextStep(), 10);
-                          }
-                        }}
-                        disabled={loading || feedback?.isCorrect}
-                        className={`p-6 rounded-2xl border-2 text-left transition-all relative overflow-hidden group ${
-                          userAnswer === option 
-                            ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20' 
-                            : 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 hover:border-slate-200 dark:hover:border-slate-700'
-                        }`}
+                        onClick={handleNextStep}
+                        disabled={loading || !userAnswer}
+                        className="w-full py-5 bg-indigo-600 dark:bg-indigo-500 text-white font-black text-xl rounded-2xl hover:bg-indigo-700 dark:hover:bg-indigo-400 disabled:opacity-50 transition-all flex items-center justify-center gap-3 shadow-xl shadow-indigo-100 dark:shadow-none"
                       >
-                        <div className="flex items-center gap-4">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm shrink-0 ${
-                            userAnswer === option ? 'bg-indigo-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'
-                          }`}>
-                            {String.fromCharCode(65 + idx)}
-                          </div>
-                          <div className="text-lg font-bold text-slate-900 dark:text-white prose prose-invert">
-                            <ReactMarkdown
-                              remarkPlugins={[remarkMath]}
-                              rehypePlugins={[rehypeKatex]}
-                              components={{
-                                p: ({ children }) => <>{children}</>,
-                              }}
-                            >
-                              {wrapMathIfNeeded(option)}
-                            </ReactMarkdown>
-                          </div>
-                        </div>
+                        {loading ? <RefreshCcw size={24} className="animate-spin" /> : <Send size={24} />}
+                        Submit Answer
                       </button>
-                    ))}
+                    )}
                   </div>
                 ) : (
                   <div className="relative">

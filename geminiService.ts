@@ -52,6 +52,8 @@ export const solveMathEquation = async (input: { image?: string; text?: string; 
     3. explanation: A detailed Markdown explanation (Essay mode).
     4. steps: A list of simplified steps for a carousel (Easy mode).
     
+    CRITICAL: Use LaTeX ($$formula$$) for ALL mathematical expressions in 'finalAnswer', 'explanation', and 'steps'. This includes individual numbers (e.g. $$5$$), variables (e.g. $$x$$), and formulas.
+    
     ${socraticMode ? `
     STRICT SOCRATIC MODE ENABLED:
     - YOUR GOAL IS TO NEVER GIVE AWAY THE FINAL ANSWER.
@@ -141,7 +143,13 @@ export const generateQuizQuestion = async (topic: string): Promise<QuizQuestion>
     
     CALCULATOR ALLOWED: Determine if a calculator is typically allowed or necessary for this problem (e.g., complex decimals, advanced graphing, trigonometry without special angles). Set 'calculatorAllowed' to true if so, otherwise false.
     
-    MULTIPLE CHOICE (MCQ): You may optionally choose to make this a Multiple Choice Question. If you do, set 'isMcq' to true and provide exactly 4 'options'. One of the options must match the 'finalAnswer' (or the last step's math). If it's a standard step-by-step question, set 'isMcq' to false and omit 'options'.
+    QUESTION TYPE: You must choose one of the following types:
+    - FREE_RESPONSE: The user types their answer. Use this for standard step-by-step math problems.
+    - MCQ: Multiple Choice Question. Provide exactly 4 'options'. One must match the final answer.
+    - TRUE_FALSE: A question with only two options: "True" and "False". One must be the 'finalAnswer'.
+    Set the 'type' field to one of these strings.
+    
+    CRITICAL: Use LaTeX ($$formula$$) for ALL mathematical expressions, including individual numbers, variables, and equations. This applies to 'question', 'finalAnswer', 'options', and ESPECIALLY the 'title' of each step.
   `;
 
   try {
@@ -151,11 +159,11 @@ export const generateQuizQuestion = async (topic: string): Promise<QuizQuestion>
         type: Type.OBJECT,
         properties: {
           question: { type: Type.STRING },
+          type: { type: Type.STRING, enum: ["FREE_RESPONSE", "MCQ", "TRUE_FALSE"] },
           calculatorAllowed: { type: Type.BOOLEAN },
           diagramSvg: { type: Type.STRING },
           finalAnswer: { type: Type.STRING },
-          isMcq: { type: Type.BOOLEAN },
-          options: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Required only if isMcq is true. Provide exactly 4 options." },
+          options: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Required if type is MCQ (4 options) or TRUE_FALSE ([\"True\", \"False\"])." },
           correctSteps: {
             type: Type.ARRAY,
             items: {
@@ -217,6 +225,8 @@ export const evaluateStep = async (question: string, expectedMath: string, userM
     IMPORTANT: Under no circumstances should you provide the exact final answer, the expected next step expression, or the complete solution. If the user is wrong, give guidance or a conceptual hint instead of the answer.
     `}
     
+    CRITICAL: Use LaTeX ($$formula$$) for ALL mathematical expressions in your feedback 'message' and 'improvement'. This includes individual numbers (e.g. $$5$$), variables (e.g. $$x$$), and formulas.
+    
     Provide your evaluation in JSON:
     - isCorrect (boolean): true if it matches the next step OR if it's the final answer.
     - isFinalAnswer (boolean): true ONLY if the user provided the final answer to the entire question.
@@ -266,9 +276,15 @@ export const generateLesson = async (topic: string, level: number = 1): Promise<
     
     Provide a 'description' (short engaging summary) and 'outline' (list of key takeaways).
 
-    In Checkpoints, use standard exam-style phrasing. For each checkpoint, determine if a calculator is typically allowed or necessary (e.g. complex decimals, advanced graphing, trigonometry). Set 'calculatorAllowed' to true if so, otherwise false.
+    In Checkpoints, use standard exam-style phrasing. Use LaTeX ($$formula$$) for ALL mathematical expressions, including individual numbers (e.g. $$5$$), variables (e.g. $$x$$), and equations. This applies to the 'topic', 'title', 'question', 'correctAnswer', and 'options' fields. 
     
-    CHECKPOINT MCQ: You may optionally choose to make checkpoints Multiple Choice Questions. If you do, set 'isMcq' to true and provide 4 'options' where one is the 'correctAnswer'.
+    For each checkpoint, determine if a calculator is typically allowed or necessary (e.g. complex decimals, advanced graphing, trigonometry). Set 'calculatorAllowed' to true if so, otherwise false.
+    
+    CHECKPOINT TYPE: For each checkpoint, choose one:
+    - FREE_RESPONSE: The student types the answer.
+    - MCQ: Provide exactly 4 'options'.
+    - TRUE_FALSE: Provide "True" and "False" as 'options'.
+    Set 'type' accordingly.
   `;
 
   try {
@@ -297,10 +313,10 @@ export const generateLesson = async (topic: string, level: number = 1): Promise<
               type: Type.OBJECT,
               properties: {
                 question: { type: Type.STRING },
+                type: { type: Type.STRING, enum: ["FREE_RESPONSE", "MCQ", "TRUE_FALSE"] },
                 correctAnswer: { type: Type.STRING },
                 explanation: { type: Type.STRING },
                 calculatorAllowed: { type: Type.BOOLEAN },
-                isMcq: { type: Type.BOOLEAN },
                 options: { type: Type.ARRAY, items: { type: Type.STRING } }
               },
               required: ["question", "correctAnswer", "explanation", "calculatorAllowed"]
@@ -334,7 +350,9 @@ export const evaluateLessonAnswer = async (topic: string, question: string, user
     Student's Answer: "${userAnswer}"
     
     Evaluate if the student's answer is conceptually correct, even if not phrased exactly like the reference.
-    Provide constructive feedback. Use LaTeX for math ($$formula$$).
+    Provide constructive feedback. 
+    
+    CRITICAL: Use LaTeX ($$formula$$) for ALL mathematical expressions in 'message' and 'improvement'. This includes individual numbers (e.g. $$5$$), variables (e.g. $$x$$), and formulas.
     
     ${socraticMode ? `
     STRICT SOCRATIC MODE ENABLED:
@@ -415,9 +433,11 @@ export const askLessonClarification = async (topic: string, question: string, co
     - Example: Instead of "The area of a circle is pi r squared", say "If you look at the formula for area, which variable represents the distance from the center to the edge?"
     - Keep them on the path of discovery.
     ` : `
-    As a helpful tutor, explain it simply (unless refusing due to the anti-cheat rule). Use Markdown and LaTeX for math ($$formula$$). 
+    As a helpful tutor, explain it simply (unless refusing due to the anti-cheat rule). Use Markdown.
     Be encouraging and clear. Keep the answer concise (under 150 words).
     `}
+    
+    CRITICAL: Use LaTeX ($$formula$$) for ALL mathematical expressions in your response. This includes individual numbers (e.g. $$5$$), variables (e.g. $$x$$), and formulas.
   `;
 
   try {
@@ -442,6 +462,11 @@ export const generateSpeech = async (text: string): Promise<string> => {
       .replace(/\\frac\{(.*?)\}\{(.*?)\}/g, '$1 divided by $2')
       .replace(/\\sqrt\{(.*?)\}/g, 'square root of $1')
       .replace(/\\sqrt\[(.*?)\]\{(.*?)\}/g, '$1 root of $2')
+      // Power operations - check for squared/cubed first
+      .replace(/\^\{2\}/g, ' squared ')
+      .replace(/\^2/g, ' squared ')
+      .replace(/\^\{3\}/g, ' cubed ')
+      .replace(/\^3/g, ' cubed ')
       .replace(/\^\{(.*?)\}/g, ' to the power of $1')
       .replace(/\^\\circ/g, ' degrees ')
       .replace(/\^circ/g, ' degrees ')
@@ -481,9 +506,14 @@ export const generateSpeech = async (text: string): Promise<string> => {
       .replace(/\\div/g, ' divided by ')
       .replace(/\\approx/g, ' approximately ')
       .replace(/\\neq/g, ' is not equal to ')
+      .replace(/\\ne/g, ' is not equal to ')
       .replace(/\\leq/g, ' is less than or equal to ')
+      .replace(/\\le/g, ' is less than or equal to ')
       .replace(/\\geq/g, ' is greater than or equal to ')
+      .replace(/\\ge/g, ' is greater than or equal to ')
       .replace(/\\equiv/g, ' is equivalent to ')
+      .replace(/\\dots/g, ' and so on ')
+      .replace(/\\ldots/g, ' and so on ')
       .replace(/\\propto/g, ' is proportional to ')
       .replace(/\\sim/g, ' is similar to ')
       .replace(/\\cong/g, ' is congruent to ')

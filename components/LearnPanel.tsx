@@ -128,6 +128,7 @@ export const LearnPanel: React.FC<{
     setShowCheckpoint(false);
     setChatHistory([]);
     setTopicOutline([]);
+    setIsFinished(false);
     
     if (!skipDetail) {
       setOutlineLoading(true);
@@ -382,8 +383,6 @@ export const LearnPanel: React.FC<{
               </button>
             </div>
           </div>
-
-          <TopicLibrary topics={PRACTICE_TOPICS} onTopicSelect={startLesson} />
         </div>
       </div>
     );
@@ -409,7 +408,17 @@ export const LearnPanel: React.FC<{
         >
           <div className="md:col-span-2 space-y-8">
             <div className="space-y-4">
-               <h1 className="text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-none uppercase">{topic}</h1>
+               <h1 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-none uppercase prose prose-indigo dark:prose-invert max-w-none">
+                 <ReactMarkdown
+                   remarkPlugins={[remarkMath]}
+                   rehypePlugins={[rehypeKatex]}
+                   components={{
+                     p: ({ children }) => <>{children}</>,
+                   }}
+                 >
+                   {topic || ''}
+                 </ReactMarkdown>
+               </h1>
                <div className="flex gap-3">
                  <span className="px-4 py-1.5 bg-indigo-600 dark:bg-indigo-500 text-white rounded-full text-xs font-black uppercase tracking-widest">Level {lessonLevel} Module</span>
                  <span className="px-4 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-full text-xs font-black uppercase tracking-widest">{staticData ? formatTopicLevel(staticData) : 'Academic'} Mastery</span>
@@ -546,8 +555,16 @@ export const LearnPanel: React.FC<{
                       <div className="aspect-square w-10 h-10 min-w-[2.5rem] min-h-[2.5rem] bg-indigo-600 dark:bg-indigo-500 text-white rounded-xl flex items-center justify-center font-black shrink-0">
                         {currentSectionIndex + 1}
                       </div>
-                      <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
-                        {validLesson.sections[currentSectionIndex].title}
+                      <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight prose prose-indigo dark:prose-invert max-w-none">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkMath]}
+                          rehypePlugins={[rehypeKatex]}
+                          components={{
+                            p: ({ children }) => <>{children}</>,
+                          }}
+                        >
+                          {validLesson.sections[currentSectionIndex].title}
+                        </ReactMarkdown>
                       </h3>
                     </div>
                     <TTSButton text={`${validLesson.sections[currentSectionIndex].title}. ${validLesson.sections[currentSectionIndex].content}`} />
@@ -623,37 +640,54 @@ export const LearnPanel: React.FC<{
 
                       {!checkpointFeedback ? (
                         <div className="space-y-4 relative">
-                          {validLesson.checkpoints[currentCheckpointIndex].isMcq && validLesson.checkpoints[currentCheckpointIndex].options ? (
-                             <div className="grid grid-cols-1 gap-3">
-                               {validLesson.checkpoints[currentCheckpointIndex].options.map((option, idx) => (
-                                 <button
-                                   key={idx}
-                                   onClick={() => {
-                                     setUserAnswer(option);
-                                     // Small delay for visual feedback then auto-submit
-                                     setTimeout(() => {
-                                       handleCheckpointSubmit();
-                                     }, 150);
-                                   }}
-                                   disabled={isEvaluating}
-                                   className={`p-5 rounded-[1.5rem] text-left border-2 transition-all relative overflow-hidden group flex items-center gap-4 ${
-                                     userAnswer === option 
-                                       ? 'bg-white text-indigo-600 border-white shadow-lg' 
-                                       : 'bg-white/10 border-white/10 text-white hover:bg-white/20'
-                                   }`}
-                                 >
-                                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm shrink-0 ${
-                                     userAnswer === option ? 'bg-indigo-600 text-white' : 'bg-white/20 text-white'
-                                   }`}>
-                                     {String.fromCharCode(65 + idx)}
-                                   </div>
-                                   <div className="text-base font-bold prose prose-invert">
-                                      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]} components={{ p: ({children}) => <>{children}</> }}>
-                                        {option}
-                                      </ReactMarkdown>
-                                   </div>
-                                 </button>
-                               ))}
+                          {validLesson.checkpoints[currentCheckpointIndex].type !== 'FREE_RESPONSE' && validLesson.checkpoints[currentCheckpointIndex].options ? (
+                             <div className="space-y-6">
+                               <div className="grid grid-cols-1 gap-3">
+                                 {validLesson.checkpoints[currentCheckpointIndex].options.map((option, idx) => (
+                                   <button
+                                     key={idx}
+                                     onClick={() => {
+                                       if (!checkpointFeedback?.isCorrect && !isEvaluating) {
+                                         setUserAnswer(option);
+                                       }
+                                     }}
+                                     disabled={isEvaluating}
+                                     className={`p-5 rounded-[1.5rem] text-left border-2 transition-all relative overflow-hidden group flex items-center gap-4 ${
+                                       userAnswer === option 
+                                         ? 'bg-white text-indigo-600 border-white shadow-lg' 
+                                         : 'bg-white/10 border-white/10 text-white hover:bg-white/20'
+                                     }`}
+                                   >
+                                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm shrink-0 ${
+                                       userAnswer === option ? 'bg-indigo-600 text-white' : 'bg-white/20 text-white'
+                                     }`}>
+                                       {String.fromCharCode(65 + idx)}
+                                     </div>
+                                     <div className="text-base font-bold prose prose-invert">
+                                        <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]} components={{ p: ({children}) => <>{children}</> }}>
+                                          {option}
+                                        </ReactMarkdown>
+                                     </div>
+                                   </button>
+                                 ))}
+                               </div>
+                               <button
+                                 onClick={handleCheckpointSubmit}
+                                 disabled={!userAnswer.trim() || isEvaluating}
+                                 className="w-full py-4 md:py-5 bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white font-black text-lg md:text-xl rounded-[1.5rem] md:rounded-[2rem] hover:bg-indigo-50 dark:hover:bg-indigo-700 transition-all shadow-xl dark:shadow-none flex items-center justify-center gap-3"
+                               >
+                                 {isEvaluating ? (
+                                   <>
+                                     <Loader2 size={24} className="animate-spin" />
+                                     Evaluating...
+                                   </>
+                                 ) : (
+                                   <>
+                                     <Send size={24} />
+                                     Submit Answer
+                                   </>
+                                 )}
+                               </button>
                              </div>
                           ) : (
                             <>
@@ -677,7 +711,12 @@ export const LearnPanel: React.FC<{
                                     <Loader2 size={24} className="animate-spin" />
                                     Evaluating...
                                   </>
-                                ) : 'Submit Answer'}
+                                ) : (
+                                  <>
+                                    <Send size={24} />
+                                    Submit Answer
+                                  </>
+                                )}
                               </button>
                             </>
                           )}

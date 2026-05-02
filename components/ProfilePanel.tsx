@@ -124,8 +124,28 @@ const AchievementsModal: React.FC<{ isOpen: boolean, onClose: () => void, profil
                   </div>
                   
                   <div className="space-y-1">
-                    <h4 className="font-black text-slate-900 dark:text-white text-lg leading-tight">{ach.title}</h4>
-                    <p className="text-slate-500 dark:text-slate-400 text-xs font-medium leading-relaxed">{ach.description}</p>
+                    <h4 className="font-black text-slate-900 dark:text-white text-lg leading-tight prose prose-indigo dark:prose-invert max-w-none">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkMath]}
+                        rehypePlugins={[rehypeKatex]}
+                        components={{
+                          p: ({ children }) => <>{children}</>,
+                        }}
+                      >
+                        {ach.title}
+                      </ReactMarkdown>
+                    </h4>
+                    <p className="text-slate-500 dark:text-slate-400 text-xs font-medium leading-relaxed prose prose-indigo dark:prose-invert max-w-none">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkMath]}
+                        rehypePlugins={[rehypeKatex]}
+                        components={{
+                          p: ({ children }) => <>{children}</>,
+                        }}
+                      >
+                        {ach.description}
+                      </ReactMarkdown>
+                    </p>
                   </div>
 
                   {!unlocked && (
@@ -535,8 +555,28 @@ const AchievementItem: React.FC<{ icon: React.ReactNode, title: string, desc: st
         {icon}
       </div>
       <div className="flex-grow">
-        <div className="font-black text-slate-900 dark:text-white text-sm">{title}</div>
-        <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight line-clamp-1">{desc}</div>
+        <div className="font-black text-slate-900 dark:text-white text-sm prose prose-indigo dark:prose-invert max-w-none">
+          <ReactMarkdown
+            remarkPlugins={[remarkMath]}
+            rehypePlugins={[rehypeKatex]}
+            components={{
+              p: ({ children }) => <>{children}</>,
+            }}
+          >
+            {title}
+          </ReactMarkdown>
+        </div>
+        <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight line-clamp-1 prose prose-indigo dark:prose-invert max-w-none">
+          <ReactMarkdown
+            remarkPlugins={[remarkMath]}
+            rehypePlugins={[rehypeKatex]}
+            components={{
+              p: ({ children }) => <>{children}</>,
+            }}
+          >
+            {desc}
+          </ReactMarkdown>
+        </div>
         
         {!unlocked && progress !== undefined && (
           <div className="mt-2 h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">

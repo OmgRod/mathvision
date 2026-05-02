@@ -173,22 +173,22 @@ const App: React.FC = () => {
   const handlePlaylistNext = () => {
     if (!playlistContext) return;
     const nextIndex = playlistContext.currentIndex + 1;
+    console.log(`[Playlist] Moving to next topic. Index: ${nextIndex}/${playlistContext.topicNames.length}`);
+    
     if (nextIndex < playlistContext.topicNames.length) {
       const nextTopic = playlistContext.topicNames[nextIndex];
       const newContext = { ...playlistContext, currentIndex: nextIndex };
       setPlaylistContext(newContext);
       
-      // We need to know if we were in Learn or Practice.
-      // For now, let's assume we continue the same type or go to playlist view.
-      // But usually "Next" means next topic in playlist.
-      // Let's just go back to playlist view for now to let them choose,
-      // OR better: if they were in a mode, keep them in that mode for the next topic.
       if (mode === 'learn') {
         setPreLoadedLesson({ topic: nextTopic });
+        setPreLoadedPractice(null);
       } else {
         setPreLoadedPractice({ topic: nextTopic });
+        setPreLoadedLesson(null);
       }
     } else {
+      console.log('[Playlist] Reached end of playlist.');
       setMode('exam-playlist');
       setPlaylistContext(null);
     }
@@ -304,6 +304,12 @@ const App: React.FC = () => {
                       <textarea
                         value={textInput}
                         onChange={(e) => setTextInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSolve();
+                          }
+                        }}
                         placeholder="e.g. What is the derivative of x^2 + 5x?"
                         className="w-full h-36 px-8 py-6 bg-slate-950 border-2 border-slate-800 rounded-[2rem] focus:border-indigo-500 focus:ring-0 transition-all font-medium text-lg resize-none text-slate-100 placeholder:text-slate-500"
                       />
@@ -555,7 +561,7 @@ const App: React.FC = () => {
               <PracticePanel 
                 initialData={preLoadedPractice ?? undefined} 
                 playlistContext={playlistContext}
-                onPlaylistNext={handlePlaylistNext}
+                onPlaylistNext={playlistContext ? handlePlaylistNext : undefined}
               />
             </motion.div>
           )}
@@ -570,7 +576,7 @@ const App: React.FC = () => {
               <LearnPanel
                 initialData={preLoadedLesson}
                 playlistContext={playlistContext}
-                onPlaylistNext={handlePlaylistNext}
+                onPlaylistNext={playlistContext ? handlePlaylistNext : undefined}
                 onChallenge={(topic) => {
                   setPreLoadedPractice({ topic });
                   setPreLoadedLesson(null);

@@ -42,6 +42,7 @@ export const MathInput: React.FC<MathInputProps> = ({
         virtualKeyboardToggle: 'none',
         menuToggle: 'none',
         smartMode: false, // We control the mode manually
+        multiline: true, // Allow multiple lines
       });
 
       const handleFocus = () => {
@@ -94,8 +95,16 @@ export const MathInput: React.FC<MathInputProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && onEnter) {
-      onEnter();
+    if (e.key === 'Enter') {
+      if (e.shiftKey) {
+        // Allow Shift+Enter to create a new line (default behavior)
+        return;
+      }
+      
+      if (onEnter) {
+        e.preventDefault();
+        onEnter();
+      }
     }
   };
 

@@ -130,8 +130,16 @@ export const MathSolution: React.FC<MathSolutionProps> = ({ result }) => {
                   </span>
                   
                   <div className="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-3 mb-4">
-                    <h4 className="text-lg md:text-xl font-bold text-slate-800 dark:text-white px-4">
-                      {activePart.steps[currentStep]?.title}
+                    <h4 className="text-lg md:text-xl font-bold text-slate-800 dark:text-white px-4 prose prose-indigo dark:prose-invert max-w-none">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkMath]}
+                        rehypePlugins={[rehypeKatex]}
+                        components={{
+                          p: ({ children }) => <>{children}</>,
+                        }}
+                      >
+                        {activePart.steps[currentStep]?.title || ''}
+                      </ReactMarkdown>
                     </h4>
                     <TTSButton text={activePart.steps[currentStep]?.title || ''} size={14} />
                   </div>

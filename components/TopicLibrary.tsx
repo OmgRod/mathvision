@@ -45,15 +45,13 @@ export const TopicLibrary: React.FC<TopicLibraryProps> = ({
 
     filteredTopics.forEach(t => {
       const topicCategories = getTopicCategories(t);
-      if (topicCategories.length === 0) {
-        groups['Uncategorized'] ??= [];
-        groups['Uncategorized'].push(t);
-      } else {
-        topicCategories.forEach(category => {
-          groups[category] ??= [];
-          groups[category].push(t);
-        });
-      }
+      // Group by the first matching category if filtered, or just the primary category
+      const displayCategory = (selectedCategory !== 'All' && topicCategories.includes(selectedCategory))
+        ? selectedCategory
+        : (topicCategories[0] || 'Uncategorized');
+      
+      groups[displayCategory] ??= [];
+      groups[displayCategory].push(t);
     });
 
     return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));

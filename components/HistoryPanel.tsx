@@ -136,8 +136,16 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelectItem }) => {
                     {formatDate(item.timestamp)}
                   </span>
                 </div>
-                <h4 className="text-base md:text-lg font-black text-slate-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                  {item.topic || 'Untitled Session'}
+                <h4 className="text-base md:text-lg font-black text-slate-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors prose prose-sm dark:prose-invert max-w-none">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkMath]}
+                    rehypePlugins={[rehypeKatex]}
+                    components={{
+                      p: ({ children }) => <>{children}</>,
+                    }}
+                  >
+                    {item.topic || 'Untitled Session'}
+                  </ReactMarkdown>
                 </h4>
               </div>
 

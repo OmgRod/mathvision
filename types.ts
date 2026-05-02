@@ -17,14 +17,20 @@ export interface MathResult {
   parts: MathPart[];
 }
 
+export enum QuestionType {
+  FREE_RESPONSE = 'FREE_RESPONSE',
+  MCQ = 'MCQ',
+  TRUE_FALSE = 'TRUE_FALSE'
+}
+
 export interface QuizQuestion {
   id: string;
   question: string;
+  type: QuestionType;
   correctSteps: Step[];
   finalAnswer: string;
   diagramSvg?: string;
   calculatorAllowed?: boolean;
-  isMcq?: boolean;
   options?: string[];
 }
 
@@ -43,10 +49,10 @@ export interface LessonSection {
 
 export interface LessonQuestion {
   question: string;
+  type: QuestionType;
   correctAnswer: string;
   explanation: string;
   calculatorAllowed?: boolean;
-  isMcq?: boolean;
   options?: string[];
 }
 
